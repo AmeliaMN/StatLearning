@@ -134,14 +134,22 @@ arrange(babynames, desc(n))
 
 ## Modeling conditions
 
+### Least squares
 
-Recall that for a linear model to be appropriate, certain conditions must be met. 
+When `R` finds the line of best fit, it is minimizing the sum of the squared residuals, 
+
+$$
+			SSE = \sum_{i=1}^n (y_i - \hat{y_i})^2, \qquad \hat{\sigma}_\epsilon = \sqrt{\frac{SSE}{n-2}}
+$$
+in order for the model to be appropriate, a number of conditions must be met. 
 
 - **L**inearity
 - **I**ndependence
 - **N**ormality
 - **E**quality of variance
 
-These conditions are mainly related to the distribution of the residuals.
+These conditions are mainly related to the distribution of the residuals. 
+
+
 
 Much of this code was adapted from [Master the Tidyverse](https://github.com/rstudio-education/master-the-tidyverse)
