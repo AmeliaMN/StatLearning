@@ -1,0 +1,266 @@
+# Inference using simulation methods 
+
+This section will introduce some simulation methods: randomization and the bootstrap. We'll use the `infer` package. 
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(knitr)
+opts_chunk$set(eval = FALSE, message = FALSE, error = TRUE)
+library(tidyverse)
+library(skimr)
+library(infer)
+library(Stat2Data)
+data("FirstYearGPA")
+```
+
+## Testing and training data
+
+One computational strategy for **assess**ing a model is using training and testing data. We can use testing and training data in order to determine if our model is good because it works well on the particular data we fit it on, or if it can be generalized to a larger set of data. 
+
+The basic idea is to break your dataset into two parts: one for training the model (running `lm()`) and one for testing the model (running `predict()`). 
+
+In this example, we are trying once again to explain a college college student's `GPA` as a function of their score on the verbal section of the SAT. 
+
+```{r}
+data(FirstYearGPA)
+```
+
+```{r}
+set.seed(42)
+which_train <- sample(1:219, size = 110, replace = FALSE)
+
+training <- FirstYearGPA %>%
+  slice(which_train)
+testing <- FirstYearGPA %>%
+  slice(-which_train)
+```
+
+Notice that I had to "set the seed" to make this document reproducible. That essentially means I'm placing the beginning of the pseudo-random number generator in R at the same spot every time.
+
+We can now run a model,
+
+```{r}
+m1 <- lm(GPA ~ HSGPA + HU + White, data = training)
+summary(m1)
+```
+
+Notice that this model is slightly different than if we'd run the model on the full dataset,
+
+```{r}
+coef(lm(GPA ~ HSGPA + HU + White, data = FirstYearGPA))
+```
+
+We can use our trained model to make predictions on our testing data.
+
+```{r}
+testing <- testing %>%
+  mutate(yhats = predict(m1, newdata = testing))
+```
+
+We might also want to have the residuals for these predictions, so we can compute those as well.
+
+```{r}
+testing <- testing %>%
+  mutate(residuals = GPA - yhats)
+```
+
+Look at your data object in your environment. What has happened to it?
+
+Once we have this information, we can compute all sorts of useful stuff with it. For example, we could find the "cross-validation correlation," the correlation between the predictions and the actual values.
+
+```{r}
+testing %>%
+  summarize(cor = cor(GPA, yhats))
+```
+
+If we square this number, it's akin to an $R^2$ value,
+
+```{r}
+testing %>%
+  summarize(cor = cor(GPA, yhats)) %>%
+  mutate(R2 = cor^2)
+```
+
+Sometimes, we want to quantify the difference between the $R^2$ for the training data and the squared cross validation correlation. 
+
+```{r}
+testing %>%
+  summarize(cor = cor(GPA, yhats)) %>%
+  mutate(R2 = cor^2, shrinkage = summary(m1)$r.squared - R2)
+```
+
+You want smaller shrinkage values. "Shrinkage of 10% or less should not be a problem, but a shrinkage of more than 50% would be worrisome."
+
+We can also look at the residual plots for our testing data,
+
+```{r}
+ggplot(testing, aes(x = yhats, y = residuals)) +
+  geom_point() +
+  geom_smooth(se = FALSE)
+```
+
+Those don't look too bad to me. We could look closer to see if the mean and standard deviation of the prediction errors look good.
+
+```{r}
+testing %>%
+  summarize(mean(residuals), sd(residuals))
+```
+
+We'd like the mean to be close to 0, and the standard deviation to be close to the standard deviation of the error term from the fit to the training sample. 
+
+```{r}
+sd(residuals(m1))
+```
+
+Those look pretty good to me!
+
+
+## Simulation-based inference
+
+Recall that the inference for linear regression relies on the assumptions that the following three conditions are met:
+
+1. Linearity
+2. Normality of Residuals
+2. Equality of Variance
+
+We know how to assess whether these conditions are met, and we have learned a few techniques for correcting them when they are not (e.g. transformations). Today, we will learn a few techniques based on simulation for making *non-parametric* inferences. Such inferences do not rely on stringent assumptions about the distribution on of the residuals. 
+
+## Randomization (Permutation) Tests
+We'll consider how we could make inference about a relationship using simulation methods. To do this, we'll use a randomization test. 
+
+Before we begin, let's examine the relationship between two variables from the `FirstYearGPA` dataset graphically. 
+
+```{r}
+ggplot(data = FirstYearGPA, aes(x = SATV, y = GPA)) +
+  geom_point() +
+  geom_smooth(method = lm, se = FALSE)
+```
+
+There appears to be some linear association between these variables, but it is not particularly strong. We can quantify this relationship the slope coefficient,
+
+```{r}
+m1 <- lm(GPA~SATV, data = FirstYearGPA)
+summary(m1)
+```
+
+In this case the value of the slope is 0.00169, which is not large, but appears to be statistically significant. However, the validity of the hypothesis test shown in the default regression table relies on the conditions for simple linear regression being met. Let's assume that in this case the assumptions are **not** met. Could we still feel confident that the slope is non-zero? 
+
+If `GPA` and `SATV` were really related, then there is a real relationship binding the $i^{th}$ value of `GPA` to the $i^{th}$ value of `SATV`. In this case it would not make sense link the $i^{th}$ value of `GPA` to the some other value of `SATV`. But if the relationship between these two variables was in fact zero, then it wouldn't matter how we matched up the entries in the variables!
+
+The basic idea of the permutation test is to shuffle the mapping between the two variables many times (i.e. sample *without replacement*), and examine the distribution of the resulting slope coefficient. If the actual value of the slope is a rare member of that distribution, then we have evidence that the null hypothesis of $\beta_1=0$ might not be true. 
+
+* Execute the following code several times. Get a feel for how the regression line can change, depending on the permutation of the data. 
+* Do you still believe that the slope is non-zero?
+
+```{r, eval=FALSE}
+ggplot(data = FirstYearGPA, aes(x = shuffle(SATV), y = GPA)) +
+  geom_point() +
+  geom_smooth(method = lm, se = FALSE)
+```
+
+The procedure for the randomization test is simple. We simply shuffle the response variable and compute the resulting slope with the explanatory variable. But we do this many times, until we have a sense of the distribution of that slope coefficient. We then examine where the observed slope falls in that distribution. 
+
+```{r}
+slopetest <- FirstYearGPA %>%
+  specify(response = GPA, explanatory = SATV) %>%
+  hypothesize(null = "independence") %>%
+  generate(reps = 5000, type = "permute") %>%
+  calculate(stat = "slope")
+
+ggplot(data = slopetest, aes(x = stat)) +
+  geom_density() +
+  geom_vline(xintercept = 0.0016986, color = "red")
+```
+
+This looks pretty weird, visually!
+
+Of course, we can also explicitly find where in the distribution the observed correlation lies. 
+
+```{r, eval=FALSE}
+slopetest %>%
+  get_p_value(obs_stat = 0.0016986, direction = "both")
+```
+
+`direction` tells R whether to compute the amount of data to the right or the left of the test statistic, or in both directions. In this case, our alternative hypothesis is $\beta_1 \neq 0$, so we want both sides of the distribution. 
+
+Finally, we can find a non-parametric 95% confidence interval for the correlation coefficient. The interpretation here is if our actual slope value fell in this interval, we would **not**  consider it statistically significant.  
+
+```{r, eval=FALSE}
+get_ci(slopetest)
+```
+
+* Compare this confidence interval to the one returned by `confint()` on original model. Why are they different?
+* Perform the above procedure to test the slope value to predict `GPA` using `SATM`. 
+* Perform the above procedure to test the slope value to predict `GPA` using `HSGPA`. 
+
+#### The Bootstrap
+
+A similar simulation technique is the bootstrap, however the bootstrap is most useful for answering the question "what are some other values we could have observed?" (confidence intervals). 
+
+In bootstrapping, we repeatedly sample cases from our data set, *with replacement*, and approximate the sampling distribution of a statistic. The key idea here is that even though the solution to the regression model is deterministic, the data itself is assumed to be randomly sampled, and so all of the estimates that we make in a regression model are **random**. If the data changes, then the estimates change as well. The bootstrap gives us a non-parametric understanding of the distribution of those estimates. Once again, the advantage to this method is that we can construct meaningful confidence intervals for, say, the slope of the regression line, without having to assume that the residuals are normally distributed. 
+
+We'll use this technique to create a confidence interval for the same slope coefficient we were studying in the randomization problem. Remember, here's what that relationship looks like: 
+
+```{r}
+ggplot(data = FirstYearGPA, aes(x = SATV, y = GPA)) +
+  geom_point() +
+  geom_smooth(method = lm, se = FALSE)
+```
+
+To create a bootstrap sample, we select rows from the data frame uniformly at random, but with replacement. 
+
+```{r, eval=FALSE}
+ggplot(data = resample(FirstYearGPA), aes(x = SATV, y = GPA)) +
+  geom_point() +
+  geom_smooth(method = lm, se = FALSE)
+```
+
+* Note the differences between this plot and the previous one. What do you notice? 
+* Run the preceding code several times. What is changing? What is staying the same? 
+
+##### Bootstrap distributions and confidence intervals
+
+One advantage of the bootstrap is that it allows us to construct a sampling distribution for the slope coefficient that is not dependent upon the conditions for linear regression being met. 
+
+The original confidence intervals for our SLR model depend upon the conditions being true. 
+
+```{r}
+summary(m1)
+confint(m1)
+```
+
+Now let's create a bootstrap distribution for the regression coefficients.
+
+```{r, eval=FALSE}
+# I'm only doing 100 samples, but you should do more!
+slopeboot <- FirstYearGPA %>%
+  specify(response = GPA, explanatory = SATV) %>%
+  generate(reps = 5000, type = "bootstrap") %>%
+  calculate(stat = "slope")
+
+ggplot(data = slopeboot, aes(x = stat)) +
+  geom_density() +
+  geom_vline(xintercept = 0.0016986, color = "red")
+```
+
+The bootstrap distribution will always be centered around the sample statistic from our real data, but shows us some other likely values for the coefficient (essentially, sampling error). One way to quantify this variability is to create a confidence interval. 
+
+There are several methods constructing confidence intervals from the bootstrap. My preferred method does not require that the bootstrap distribution be normal, but works best when it is roughly symmetric. In this case we simply use the percentiles of the bootstrap distribution to build confidence intervals. This method makes the most sense in the most cases. 
+
+```{r, eval=FALSE}
+get_ci(slopeboot)
+visualize(slopeboot)
+```
+
+
+
+
+- Create a bootstrap sample of at least 2000 and construct a confidence intervals using the bootstrap. How does this interval differ from the typical confidence interval? 
+
+- Construct bootstrapped confidence intervals for the $GPA \sim SATV$ and $GPA \sim SATM$ models. 
+
+#### Further Reading
+
+- The Boostrapping and Randomization chapters from @IsmKim. 
+- @Hest2015
+- @Efr1979

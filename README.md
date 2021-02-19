@@ -1,0 +1,1 @@
+These are the source files for the [2021 Inmas Statistical Learning Workshop](https://bookdown.org/amelia_a_mcnamara/StatLearning). It is based on the [minimal **bookdown** example](https://github.com/rstudio/bookdown).

@@ -1,0 +1,177 @@
+# More complex models
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(knitr)
+opts_chunk$set(eval = FALSE, message = FALSE, error = TRUE)
+library(tidyverse)
+library(skimr)
+library(infer)
+library(Stat2Data)
+data("FirstYearGPA")
+```
+
+This will include logistic regression, as well as potentially more models as time allows! Packages introduced: `forcats`, `stringr`. 
+
+[This cartoon](https://en.wikipedia.org/wiki/Bechdel_test#/media/File:Dykes_to_Watch_Out_For_(Bechdel_test_origin).jpg) by Alison Bechdel inspired the "Bechdel test." A movie passes the test if it meets the following criteria:
+
+- there are $\geq 2$ female characters
+- the female characters talk to each other
+- at least 1 time, they talk about something other than a male character
+
+Let's load that data,
+
+```{r}
+library(fivethirtyeight)
+data(bechdel)
+?bechdel
+```
+
+1. **Explore the structure of the data**
+```{r}
+# how many rows does the dataset have?
+
+# how many variables?
+
+# what sorts of variables are included?
+```
+
+2. **Explore the `clean_test` variable** (what type of variable is that?)
+
+```{r, eval = FALSE}
+# Blank canvas
+ggplot(___, aes(___))
+
+# Bar chart    
+ggplot(___, aes(___)) + 
+    geom____()
+```
+
+3. **Explore the `budget` variable** (hat kind of variable is that?)
+```{r, eval = FALSE}
+# Blank canvas
+ggplot(___, aes(___))
+
+# Bar chart    
+ggplot(___, aes(___)) + 
+    geom____()
+```
+
+4. **Numerically summarize the trend and variability in `budget`**
+```{r, eval=FALSE}
+# Mean & median budget
+___ %>% 
+  ___(___(miles_away), ___(miles_away))
+
+# Variance & st dev in budget
+___ %>% 
+  ___(___(miles_away), ___(miles_away))
+```
+
+## Logistic regression
+
+Often, we want to model a **response** variable that is **binary**, meaning that it can take on only two possible outcomes. These outcomes could be labeled "Yes" or "No", or "True" of "False", but for all intents and purposes, they can be coded as either 0 or 1. We have seen these types of variables before (as indicator variables), but we always used them as **explanatory** variables. Creating a model for such a variable as the response requires a more sophisticated technique than ordinary least squares regression. It requires the use of a **logistic** model. 
+
+Instead of modeling $\pi$ (the response variable) like this,
+$$
+  \pi = \beta_0 + \beta_1 X
+$$
+
+suppose we modeled it like this,
+$$
+  \log \left( \frac{\pi}{1-\pi} \right) = logit(\pi) = \beta_0 + \beta_1 X
+$$
+This transformation is called the **logit** function. What are the properties of this function? Note that this implies that
+$$
+  \pi = \frac{e^{\beta_0 + \beta_1 X}}{1 + e^{\beta_0 + \beta_1 X}} \in (0,1)
+$$
+
+The logit function constrains the fitted values to lie within $(0,1)$, which helps to give a natural interpretation as the probability of the response actually being 1. 
+
+
+- uses logit function as a "link"
+- logit produces an S-curve inside [0,1]
+- fit using maximum likelihood estimation, **not** minimizing the sum of the squared residuals
+- really, no residuals! This means we don't have sums of squares
+
+
+Logistic regression is linear in log-odds space. 
+
+```{r, fig.height = 2, fig.width=2}
+ggplot(football_logm1, aes(x = distance)) +
+  geom_line(aes(y = .fitted))
+```
+
+Why is this useful?
+
+## Odds space
+
+$$
+\frac{\pi}{1-\pi} = e^{\beta_0+\beta_1\cdot X}
+$$
+
+```{r, fig.height = 2, fig.width=2}
+ggplot(football_logm1, aes(x = distance)) +
+  geom_line(aes(y = odds))
+```
+
+Why is this useful? 
+
+## Probability space
+
+$$
+\pi = \frac{e^{\beta_0+\beta_1\cdot X}}{1+e^{\beta_0+\beta_1\cdot X}}
+$$
+
+```{r, fig.height = 2, fig.width=2}
+ggplot(football_logm1, aes(x=distance)) + geom_point(aes(y=GOOD)) + geom_line(aes(y=probability))
+```
+
+Why is this useful?
+
+## Log-odds are linear {.t}
+
+$\beta_1$ is the typical change in the log-odds for each one-unit increae in x. 
+
+$e^{\beta_1}$ is the multiplier for odds for each one-unit increase. 
+
+These changes are constant
+
+## 50/50 point {.t}
+
+Sometimes, we want to know the 50\% point
+
+## Fitting a logistic regression model in R
+
+Fitting a logistic curve is mathematically more complicated than fitting a least squares regression, but the syntax in R is similar, as is the output. The procedure for fitting is called *maximum likelihood estimation*, and the usual machinery for the sum of squares breaks down. Consequently, there is no notion of $R^2$, etc.
+
+1. How can we interpret the coefficients of this model in the context of the problem? 
+
+## Assessing the fit
+
+Don't have sums of squares, so we can't use $R^2$, ANOVA, nested F-tests...
+
+Instead, since we fit the model using maximum likelihood estimation (MLE), we can compute likelihoods
+
+\begin{eqnarray*}
+L(\text{success}) &=& \hat{\pi} \\
+L(\text{failure}) &=& 1- \hat{pi} \\
+L(\text{model}) &=& \prod_{i=1}^n L(y_i)
+\end{eqnarray*}
+
+Likelihood values are often very small, which is one reason we use the log-likelihood. 
+
+Log likelihood is always negative. Larger $\log(L)$ is closer to zero, and therefore a better fit.
+
+How do we assess that? Drop-in-deviance test. 
+
+\begin{eqnarray*}
+G = -2\log(L_0) - (-2 \log(L))
+\end{eqnarray*}
+
+where $L_0$ is the likelihood from the constant model (using the mean) and $L$ is the likelihood under the larger model. We find a p-value by locating $G$ in a $\chi^2$-distribution with $k$ degrees of freedom. 
+
+## Conditions for logistic regression
+
+- Linearity of the logit
+- Independence 
+- Randomness

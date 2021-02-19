@@ -1,0 +1,147 @@
+# Data wrangling for model assessment
+
+```{r, echo = FALSE, message=FALSE, eval=TRUE}
+library(knitr)
+opts_chunk$set(eval = FALSE, message = FALSE, error = TRUE)
+library(tweetrmd)
+```
+
+We'll talk about the `dplyr` package, and assessing models. 
+
+## dplyr verbs
+
+We have already seen some `dplyr` verbs, but we are going to need more as we move on. So, let's spend some time focusing on them. Here are the main verbs we will cover:
+
+verb | action | example
+-------|-------------|-------
+`select()` | take a subset of *columns* | `select(x,y)`, `select(-x)`
+`filter()` | take a subset of *rows* | `filter(x == __, y > __)`
+`arange()` | reorder the *rows* | `arrange(x)`, `arrange(desc(x))`
+`summarize()` | a many-to-one or many-to-few summary | `summarize(mean(x), median(y))` 
+`mutate()` | a many-to-many operation that creates a new variable | `mutate(x = ___, y = ___)`
+`group_by()` | group the *rows* by a specified *column* | `group_by(x) %>% something()`
+
+
+We'll use the `babynames` package to play with the verbs, so let's begin by loading that dataset.
+
+```{r}
+library(babynames)
+babynames
+```
+
+We could `skim` the data, to learn something about it:
+
+```{r}
+library(skim)
+skim(babynames)
+```
+
+### select()
+
+```{r}
+select(babynames, name, prop)
+```
+
+1. Alter the code to select just the `n` column
+
+#### select() helpers
+
+- `:` select range of columns, `select(storms, storm:pressure)`
+- `-` select every column but `select(storms, -c(storm, pressure))`
+- `starts_with()` select columns that start with... `select(storms, starts_with("w"))`
+- `ends_with()` select columns that end with... `select(storms, ends_with("e"))`
+- ...and more! Check out the Data Transformation cheatsheet
+
+### filter()
+extract rows that meet logical criteria 
+
+```{r}
+filter(babynames, name == "Amelia")
+```
+
+Notice I'm using `==`, which tests if things are equal. In R, `=` sets something. There are other logical comparisons you can use
+
+| | |
+|------|------------|
+x < y | less than
+x > y | greater than 
+x == y | equal to
+x <= y | less than or equal to 
+x >= y | greater than or equal to
+x != y | not equal to
+x %in% y | group membership
+is.na(x) | is NA
+!is.na(x) | is not NA
+
+1. Now, see if you can use the logical operators to manipulate our code to show:
+
+-	All of the names where `prop` is greater than or equal to 0.08
+- All of the children named "Sea"
+- All of the names that have a missing value for `n`
+(Hint: this should return an empty data set).
+
+Common mistakes:
+
+- using `=` instead of `==`
+- forgetting quotes
+
+We can also filter rows that match *every* logical criteria,
+
+```{r}
+filter(babynames, name == "Amelia", year == 1880)
+```
+
+For this, you need to use Boolean operators
+
+| | |
+---|----|
+a & b | and 
+a \| b | or
+xor(a, b) | exactly or
+!a | not
+a %in% c(a, b) | one of (in)
+
+2. Use Boolean operators to alter the code below to return only the rows that contain:
+
+- Girls named Sea
+- Names that were used by exactly 5 or 6 children in 1880
+- Names that are one of Acura, Lexus, or Yugo
+
+### arrange()
+
+Orders rows from smallest to largest values
+
+
+```{r}
+arrange(babynames, n)
+```
+
+1. Arrange babynames by n. Add prop as a second (tie breaking) variable to arrange by.
+2. Can you tell what the smallest value of n is? Any guesses why?
+
+Another helpful function is `desc()`, which changes the ordering to largest smallest,
+
+```{r}
+arrange(babynames, desc(n))
+```
+
+3. Use `desc()` to find the names with the highest `prop`.
+4. Use `desc()` to find the names with the highest `n`.
+
+## %>%, the pipe
+
+
+
+## Modeling conditions
+
+
+Recall that for a linear model to be appropriate, certain conditions must be met. 
+
+- **L**inearity
+- **I**ndependence
+- **N**ormality
+- **E**quality of variance
+
+These conditions are mainly related to the distribution of the residuals.
+
+Much of this code was adapted from [Master the Tidyverse](https://github.com/rstudio-education/master-the-tidyverse)

@@ -1,0 +1,50 @@
+--- 
+title: "Statistical Learning Inmas workshop"
+author: "Amelia McNamara"
+date: "February 19-21, 2021"
+site: bookdown::bookdown_site
+output: bookdown::gitbook
+documentclass: book
+bibliography: [book.bib, packages.bib]
+biblio-style: apalike
+link-citations: yes
+description: "A three-day workshop introducing data science skills, including statistical modeling"
+---
+
+# Welcome {-}
+
+## Goals
+
+- Hone your statistical, data, and computing literacy.
+
+- Instead of covering all statistical modeling & inference techniques in 2 days (impossible!), focus on a couple of foundational & generalizable tools: linear regression & simple classification. In doing so, we’ll bypass topics in traditional stat intros.
+
+- Favor applications using real data over theory so that you walk away with a sophisticated set of tools with real applications.
+
+- Play around with the RStudio software. In doing so, focus on the patterns in & potential of this software. Don’t worry about memorizing syntax - this will come with experience. For example, by the end of the week you’ll likely be comfortable with ggplot() and lm() functions simply because we’ll use them a lot!
+
+- Do some messy stuff. Too often, stat and data science classes are taught with data that are nice and tidy. In the real world, data are messy and require cleaning/wrangling. As discussed in [this New York Times article](https://www.nytimes.com/2014/08/18/technology/for-big-data-scientists-hurdle-to-insights-is-janitor-work.html), "Data scientists…spend from 50 percent to 80 percent of their time mired in this more mundane labor of collecting and preparing unruly digital data, before it can be explored for useful nuggets." Though data wrangling isn’t the focus of this bootcamp, it will be a useful and necessary part of it. Don’t worry / get too distracted by the extra coding this requires. The goal is simply for you to start recognizing the messiness of real world data and to build up confidence in dealing with it.
+
+## Schedule
+
+- Before the workshop
+  - **pre-bootcamp prep** 
+- **Friday, February 19**
+  - 1-4 pm Central (2-5 pm Eastern): visualizing and modeling variability
+      - Welcome/intros
+      - Pre-bootcamp recap, motivating example
+      - Visualizing relationships
+      - Modeling relationships with linear regression
+- **Saturday, February 20**
+  - 9 am-noon Central (10 am - 1 pm Eastern): data wrangling for model assessment
+  - 1-4 pm Central (2-5 pm Eastern): inference using simulation methods
+- **Sunday, February 21**
+  - 9 am - noon Central (10 am - 1 pm Eastern): more complex models
+
+## License
+
+This material was compiled by Amelia McNamara for the February 2021 INMAS workshop on statistical learning. [This work is licensed under a Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License](https://creativecommons.org/licenses/by-nc-sa/4.0/). 
+
+[![](img/Cc-by-nc-sa_icon.svg.png)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
+
+Portions of this material are modified from other workshops, including the [2020 "Math-to-industry bootcamp"](https://ajohns24.github.io/IMA_bootcamp_2020/index.html), and [Master the Tidyverse](https://github.com/rstudio-education/master-the-tidyverse).   

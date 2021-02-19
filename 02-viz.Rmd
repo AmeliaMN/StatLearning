@@ -1,0 +1,260 @@
+# Visualizing and characterizing variability {#intro}
+
+```{r, echo = FALSE, message=FALSE, eval=TRUE}
+library(knitr)
+opts_chunk$set(eval = FALSE, message = FALSE, error = TRUE)
+library(tweetrmd)
+```
+
+This workshop will attempt to teach you some of the basics of the data science workflow, as imagined by Wickham and Grolemund:
+
+![](img/data-science.png)
+
+via @WicGro2017
+
+Notice that this graphic already includes a cycle-- this is an important part of the process! It is unlikely (impossible) that you could work linearly through a data science project. 
+
+It is tempting to focus on the *modeling* aspect of the cycle, and miss the other elements. But, recall 
+
+```{r, echo=FALSE, eval=TRUE}
+include_tweet("https://twitter.com/drob/status/987436677026254848?s=20")
+```
+
+
+
+## Pre-bootcamp review
+
+**Statistics** is the practice of using data from a sample to make inferences about some broader population of interest. Data is a key word here. In the pre-bootcamp prep, you explored the first simple steps of a statistical analysis: familiarizing yourself with the structure of your data and conducting some simple univariate analyses. Let's review what you learned.
+
+1. What was the variability like in the `salary` variable in the `Salaries` dataset?
+
+You (hopefully!) need to re-load the `Salaries` dataset. (If you don't, that probably means you saved your workspace the last time you closed RStudio, talk to me or a TA about how to clear your workspace.)
+
+```{r, eval=TRUE}
+library(car)
+data(Salaries)
+```
+
+2. What do you think might **explain** the variability in `salary`? 
+
+We are going to try to use plots and models to explain this variability.
+
+### Variable types, redux
+
+It may be useful to think about variables as 
+
+- **response variable**: this is the one we're the most interested in, which we think might "respond."
+- **explanatory variable(s)**: these are the ones we think might "explain" the variation in the response. 
+
+*Before* building any models, the first crucial step in understanding relationships is to **build informative visualizations**.
+
+
+### Visualizing variability (in breakout rooms)
+
+Run through the following exercises which introduce different approaches to visualizing relationships. In doing so, for each plot:
+
+- examine what the plot tells us about relationship trends & strength (degree of variability from the trend) as well as outliers or deviations from the trend.
+- think: what’s the take-home message?
+
+We’ll do the first exercise together.
+
+1. **Sketches**
+How might we visualize the relationships among the following pairs of variables? Checking out the structure on just a few people might help:
+
+```{r show-salaries, eval=TRUE, echo=FALSE}
+Salaries %>%
+  slice(1:10)
+```
+  a. `salary` vs.   `yrs.since.phd`
+  b. `salary` vs. `yrs.service`
+  c. `salary` vs. `discipline`
+  d. `salary` vs. `yrs.since.phd` and `discipline` (in one plot)
+  e. `salary` vs. `yrs.since.phd` and `sex` (in one plot)
+  
+2. **Scatterplots of 2 quantitative variables**
+
+By default, the response variable ($Y$) goes on the y-axis and the predictor ($X$) goes on the x-axis.
+
+```{r}
+ggplot(Salaries, aes(x=yrs.since.phd, y=salary))
+
+ggplot(Salaries, aes(x=yrs.since.phd, y=salary)) +
+  geom_point()
+
+ggplot(Salaries, aes(x=yrs.since.phd, y=salary)) +
+  geom_text(aes(label=discipline))
+
+# practice: make a scatterplot of salary vs. yrs.service
+```
+
+3. **Side-by-side plots of 1 quantitative variable vs. 1 categorical**
+
+```{r}
+ggplot(Salaries, aes(x=salary, fill = discipline)) +
+  geom_density()
+
+ggplot(Salaries, aes(x=salary, fill = discipline)) +
+  geom_density(alpha = 0.5)
+
+ggplot(Salaries, aes(x=salary)) +
+  geom_density() +
+  facet_wrap(~discipline)
+
+# practice: make side-by-side boxplots of salary by rank
+```
+
+4. **Scatterplots of 2 quantitative variables plus a categorical**
+
+If `yrs.since.phd` and `discpline` both explain some variability in `salary`, why not look at all the variables at once? 
+
+```{r}
+ggplot(Salaries, aes(y = ___, x = ___, color = ___)) + 
+    geom_point(alpha = 0.5)
+```
+
+5. **Plots of 3 quantitative variables**
+
+Think back to our sketches. How might we include information about `yrs.service` in our plots? 
+
+```{r}
+ggplot(Salaries, aes(x=yrs.since.phd, y=salary, ___ = yrs.service)) +
+  geom_point(alpha=0.5)
+```
+
+## Models
+
+As we look at these pictures, we begin to build mental models in our head. Statistical models are much like mental models (they help us generalize and make predictions) but of course, more rigorous. No matter which model we are using, we will use the CFAU framework,
+
+- **C**hoose
+- **F**it
+- **A**ssess
+- **U**se
+
+We're going to begin with linear models, which are one of the simplest ways to model. 
+
+### Linear models
+
+A linear model is a **supervised** learning method, in that we will use ground truth to help us fit the model, as well as assess how good our model is. 
+
+With regression, your input is
+
+$$
+x = (x_1, x_2, \dots, x_k)
+$$
+and the output is a quantitative $y$. We can "model" $y$ by $x$ by finding 
+
+$$
+y = f(x) + \epsilon
+$$
+
+where $f(x)$ is some function of $x$, and $\epsilon$ are errors/residuals. For simple linear regression, $f(x)$ will be the equation of a line. 
+
+Specifically, we use the notation
+
+$$
+Y = \beta_0 + \beta_1\cdot X + \epsilon, \, \epsilon \sim N(0, \sigma_\epsilon)
+$$
+although we are primarily concerned with the fitted model,
+
+$$
+\hat{Y} = \hat{\beta_0} + \hat{\beta_1}\cdot X
+$$
+Notice that there is no $\epsilon$ in the fitted model. If we want, we can calculate 
+
+$$
+\epsilon_i = y_i - \hat{y}_i
+$$
+for each data point, to get an idea of how "off" the model is. 
+
+We can use our model to predict $y$ for new values of $y$, explain variability in $y$, and describe relationships between $y$ and $x$. 
+
+## Linear models in R 
+The syntax for linear models is different than the standard tidyverse syntax, and instead is more similar to the syntax for lattice graphics.
+
+The general framework is
+`goal ( y ~ x , data = mydata )`
+We'll use it for modeling.
+
+Given how the data looked in the scatterplot we saw above, it seems reasonable to **choose** a simple linear regression model. We can then **fit** it using R. 
+
+```{r}
+m1 <- lm(salary ~ yrs.since.phd, data = Salaries)
+```
+
+
+We're using the assignment operator to store the results of our function into a named object.
+
+I'm using the assignment operator `<-`, but you can also use `=`. As with many things, I'll try to be consistent, but I often switch between the two. 
+
+The reason to use the assignment operator here is because we might want to do things with our model output later. If you want to skip the assignment operator, try just running `lm(salary ~ yrs.since.phd, data = Salaries)` in your console to see what happens. 
+
+Now, we want to move on to **assess**ing and **using** our model. Typically, this means we want to look at the model output (the fitted coefficients, etc). If we run `summary()` on our model object we can look at the output. 
+
+```{r}
+summary(m1)
+```
+
+The p-values are quite significant, which might lead us to **assess** that the model is pretty effective. We can also **use** the model for description. To write this model out in our mathematical notation,
+
+$$
+\widehat{\texttt{salary}} = 91718.7 + 985.3\cdot \texttt{yrs.since.phd}
+$$
+
+1. What would this model **predict** for the salary of a professor who had just finished their PhD?
+
+```{r}
+
+```
+
+
+
+2. What does the model **predict** for a professor who has had their PhD for 51 years? 
+
+```{r}
+
+```
+
+
+3. What was the observed salary value for the person with 51 years of experience? 
+
+```{r}
+
+```
+
+
+4. What is the residual?
+
+```{r}
+
+```
+
+
+To **assess** further, we can compare it to a "null" model, where we don't use a predictor (Instead, we just use the mean as the model for every observation).
+
+We can run two models and visualize them to compare! The first is the average, and the second is the least squares regression line. We can think of the latter as a the null model where $\beta_1 = 0$ and $\hat{y} = \bar{y}$. Which model do you think is better?
+
+```{r}
+modMean <- lm(salary ~ 1, data = Salaries)
+summary(modMean)
+p <- ggplot(Salaries, aes(x = yrs.since.phd, y = salary)) + geom_point()
+
+p + geom_abline(slope = 0, intercept = 113706)
+p + geom_smooth(method = lm, se = FALSE)
+```
+
+### Least squares
+
+When `R` finds the line of best fit, it is minimizing the sum of the squared residuals, 
+
+$$
+			SSE = \sum_{i=1}^n (y_i - \hat{y_i})^2, \qquad \hat{\sigma}_\epsilon = \sqrt{\frac{SSE}{n-2}}
+$$
+in order for the model to be appropriate, a number of conditions must be met. 
+
+- **L**inearity
+- **I**ndependence
+- **N**ormality
+- **E**quality of variance
+
+These conditions are mainly related to the distribution of the residuals. 
+
