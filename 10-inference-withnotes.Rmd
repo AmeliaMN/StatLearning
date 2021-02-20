@@ -1,4 +1,7 @@
-# Inference using simulation methods {#inference}
+# Inference using simulation methods 
+
+
+[This "chapter" is essentially the same as \@ref(inference), but with some of the notes I wrote in the document as we went.]
 
 This section is kind of a grab-bag of computational techniques in support of statistics and inference. We'll introduce some simulation methods: randomization and the bootstrap. We'll use the `infer` package. 
 
