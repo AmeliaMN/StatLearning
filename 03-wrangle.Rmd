@@ -449,7 +449,9 @@ and `glance` to look at model summaries,
 glance(m1) 
 ```
 
-Try re-making a few more of our models from yesterday, and `glance`ing to see which one has the highest adjusted $R^2$. 
+1. Try re-making a few more of our models from yesterday, and `glance`ing to see which one has the highest adjusted $R^2$. 
+
+2. Use `dplyr` functions to calculate the adjusted $R^2$ value for your favorite penguins model. 
 
 Beyond $R^2$, another useful statistic for **assess**ing a model is the mean squared error, or the root mean squared error
 
@@ -457,7 +459,7 @@ $$
 MSE = \frac{1}{n}\sum_{i=1}^n (y_i-\hat{y}_i)^2 \\
 RMSE = \sqrt{MSE}
 $$
-Try using `dplyr` verbs to compure the RMSE. 
+1. Try using `dplyr` verbs to compute the RMSE. 
 
 ## Bonus: comment on theory!
 

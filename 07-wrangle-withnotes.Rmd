@@ -101,6 +101,9 @@ We can also filter rows that match *every* logical criteria,
 filter(babynames, name == "Amelia", year == 1880)
 ```
 
+
+
+
 For this, you need to use Boolean operators
 
 | | |
@@ -117,17 +120,32 @@ a %in% c(a, b) | one of (in)
 - Names that were used by exactly 5 or 6 children in 1880
 - Names that are one of Acura, Lexus, or Yugo
 
+```{r}
+filter(babynames, name == "Acura" | name == "Lexus" | name == "Yugo")
+
+carbabies <- filter(babynames, name %in% c("Acura", "Lexus", "Yugo"))
+```
+
+
 ### arrange()
 
 Orders rows from smallest to largest values
 
 
 ```{r}
-arrange(babynames, n)
+smallestbabies <- arrange(babynames, n)
 ```
 
 1. Arrange babynames by n. Add prop as a second (tie breaking) variable to arrange by.
-2. Can you tell what the smallest value of n is? Any guesses why?
+
+```{r}
+babynames %>%
+  arrange(n, desc(prop))
+```
+
+
+
+2. Can you tell what the smallest value of `n` is? Any guesses why?
 
 Another helpful function is `desc()`, which changes the ordering to largest smallest,
 
@@ -136,6 +154,11 @@ arrange(babynames, desc(n))
 ```
 
 3. Use `desc()` to find the names with the highest `prop`.
+
+```{r}
+arrange(babynames, desc(prop))
+```
+
 4. Use `desc()` to find the names with the highest `n`.
 
 ## %>%, the pipe
@@ -182,10 +205,31 @@ What does this code do?
 babynames %>%
   filter(year == 2015, sex == "M") %>%
   select(name, n) %>%
-  arrange(desc(n))
+  arrange(desc(n)) 
+```
+
+```{r}
+names_all <- babynames %>%
+  distinct(name) %>%
+  arrange(desc(name))
 ```
 
 What does this code do? 
+
+```{r}
+babynames %>%
+  filter(year == 2015, sex == "M") %>%
+  arrange(desc(n)) %>%
+  lm(prop~year, data = .) # . passes data in a different spot
+```
+
+
+```{r}
+longnames <- babynames %>%
+  distinct(name) %>%
+  arrange(desc(nchar(name))) %>%
+  filter(nchar(name)>10)
+```
 
 We pronounce the pipe, `%>%`, as "then."
 
@@ -195,6 +239,15 @@ We pronounce the pipe, `%>%`, as "then."
   - Filter babynames to just the girls that were born in 2015
   - Select the `name` and `n` columns
   - Arrange the results so that the most popular names are near the top.
+  
+```{r}
+babynames %>%
+  filter(name %in% c("Amelia", "Richard", "Sofia")) %>%
+  ggplot(aes(x=year, y=n, color = name)) + 
+  geom_line() + 
+  facet_wrap(~sex)
+```
+  
 
 6. [Combining `dplyr` knowledge with `ggplot2`!] 
   - Trim `babynames` to just the rows that contain a particular name and sex. This could be your name/sex or that of a friend or famous person. 
@@ -229,7 +282,7 @@ These conditions are mainly related to the distribution of the residuals.
  Assumption | Consequence | Diagnostic | Solution
 ------------|------------|------------|------------
 
-Indepdence | inaccurate inference | common sense/context | use a different technique/ don't model
+Independence | inaccurate inference | common sense/context | use a different technique/ don't model
 $E(\epsilon)=0$ | lack of model fit | plot of residuals vs. fitted values | transform $x$ and/or $y$ 
 $Var(\epsilon)=\sigma^2$ | inaccurate inference | plot of residuals v. fitted values | transform $y$ 
 $\epsilon\sim N(\mu, \sigma)$ | if extreme, inaccurate inference | QQ plot | transform $y$ 
@@ -268,6 +321,7 @@ One parameter to `augment()` is `data=`. Let's try again with that,
 
 ```{r}
 m1_augmented <- augment(m1, data=Salaries)
+m5_augmented <- augment(m5, data = Salaries)
 ```
 
 What's different about that object? 
@@ -279,7 +333,10 @@ We could use this augmented version of our dataset to do things like look for th
 
 ```{r}
 m1_augmented %>%
-  ___()
+  arrange(desc(abs(.resid)))
+
+m1_augmented %>%
+  filter(.resid<0)
 ```
 
 We could also use this dataset to plot our residuals, to see if they conform to our conditions. One way to see residual plots is to use the convenience function `plot()` on our original model object.
@@ -293,7 +350,15 @@ But, a more flexible approach is to create our own residual plots. The augmented
 ```{r}
 ggplot(m1_augmented, aes(x=.fitted, y=.resid)) + 
   geom_point() + 
-  geom_smooth(se=FALSE)
+  geom_smooth(method = "loess", se=FALSE, formula = "y~x")
+```
+
+Residual v. fitted plot. Use it to check linearity and equality of variance. 
+
+```{r}
+ggplot(Salaries, aes(x=yrs.since.phd, y = salary)) +
+  geom_point() + 
+  geom_smooth(method = "lm", se = FALSE)
 ```
 
 ```{r}
@@ -302,9 +367,28 @@ ggplot(m1_augmented, aes(sample = .resid)) +
   stat_qq_line()
 ```
 
+[Sean Kross on QQ plots](https://seankross.com/2016/02/29/A-Q-Q-Plot-Dissection-Kit.html)
+
 One benefit to making our own residual plots is we can do things like color by a different variable, or facet the plot, to see if there is unexplained variability. 
 
 Try coloring the residual v. fitted plot by each of the categorical variables. Which categorical variable do you think explains the most additional variability? How can you tell?
+
+```{r}
+ggplot(m1_augmented, aes(x=.fitted, y=.resid)) + 
+  geom_point(aes(color = sex)) + 
+  geom_smooth(method = "loess", se=FALSE, formula = "y~x")
+```
+
+```{r}
+m2 <- lm(log(salary) ~ yrs.since.phd + discipline, 
+         data = Salaries)
+m2_augmented <- augment(m2, data=Salaries)
+
+ggplot(m2_augmented, aes(x=.fitted, y=.resid)) + 
+  geom_point(aes(color = discipline)) + 
+  geom_smooth(method = "loess", se=FALSE, formula = "y~x")
+```
+
 
 
 ## More dplyr verbs
@@ -343,7 +427,8 @@ babynames %>%
 
 ```{r}
 babynames %>% 
-  summarise(n = n(), nname = n_distinct(name))
+  summarise(n = n(), nname = n_distinct(name)) %>%
+  select(nname)
 ```
 
 But, these become even more useful when combined with...
@@ -375,7 +460,7 @@ babynames %>%
 ```
 
 ```{r}
-babynames %>%
+babynames <- babynames %>%
   mutate(percent = round(prop*100, 2), nper = round(percent))
 ```
 
@@ -395,6 +480,7 @@ We can think of partitioning the variability in our response variable as follows
 $$
 SST = SSM + SSE
 $$
+
 where
 
 \begin{eqnarray*}
@@ -408,7 +494,10 @@ Let's find the other two sums of squares
 ```{r}
 m1_augmented %>%
   mutate(meansalary = mean(salary)) %>%
-  summarize(SSE = sum(.resid^2), SSM = sum((meansalary - .fitted)^2), SST = sum((salary - meansalary)^2))
+  select(salary, .fitted, .resid, meansalary) %>%
+  summarize(SSE = sum(.resid^2), 
+            SSM = sum((meansalary - .fitted)^2), 
+            SST = sum((salary - meansalary)^2))
 ```
 
 We don't have a nice way to interpret those sums of squares, but we can use them to calculate the $R^2$ value,
@@ -416,11 +505,14 @@ We don't have a nice way to interpret those sums of squares, but we can use them
 $$
 R^2 = 1 - \frac{SSE}{SST} = \frac{SSM}{SST}
 $$
+
 ```{r}
 m1_augmented %>%
   mutate(meansalary = mean(salary)) %>%
-  summarize(SSE = sum(.resid^2), SSM = sum((meansalary - .fitted)^2), SST = sum((salary - meansalary)^2)) %>%
-  summarize(R2 = 1- SSE/SST)
+  summarize(SSE = sum(.resid^2), 
+            SSM = sum((meansalary - .fitted)^2), 
+            SST = sum((salary - meansalary)^2)) %>%
+  summarize(R2 = 1 - SSE/SST)
 ```
 
 We can use the $R^2$ value to **assess** the model. The larger the $R^2$ value, the more variability we can explain using the model. 
@@ -430,6 +522,7 @@ Unfortunately, $R^2$ always increases as you add predictors, so it is not a good
 $$
 R^2_{adj} = 1- \frac{SSE/(n-1)}{SST/(n-k-1)}
 $$
+
 The adjusted $R^2$ doesn't have a nice interpretation, but it can be used to compare between models. 
 
 The $R^2$ and $R^2_{adj}$ values are given by the model summary table. 
@@ -447,10 +540,35 @@ tidy(m1)
 and `glance` to look at model summaries,
 
 ```{r}
-glance(m1) 
+glance(m1)
 ```
 
 Try re-making a few more of our models from yesterday, and `glance`ing to see which one has the highest adjusted $R^2$. 
+
+```{r, eval=TRUE}
+library(palmerpenguins)
+data("penguins")
+library(broom)
+favmod <- lm(flipper_length_mm ~ species + bill_depth_mm + body_mass_g + sex, data = penguins)
+favmod_augment <- augment(favmod) # works
+```
+
+```{r, eval=TRUE, error = TRUE}
+favmod_augment <- augment(favmod, data = penguins) # gets mad, because of missing values
+```
+
+I didn't know how to fix this, so I had to look at documentation!
+
+```{r}
+?augment.lm
+```
+
+It turns out it has to do with the `na.action` in `lm`. 
+
+```{r, eval=TRUE}
+favmod <- lm(flipper_length_mm ~ species + bill_depth_mm + body_mass_g + sex, data = penguins, na.action = "na.exclude")
+favmod_augment <- augment(favmod, data = penguins) # works! 
+```
 
 Beyond $R^2$, another useful statistic for **assess**ing a model is the mean squared error, or the root mean squared error
 
