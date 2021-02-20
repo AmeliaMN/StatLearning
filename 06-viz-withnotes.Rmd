@@ -421,8 +421,9 @@ p2 + moderndive::geom_parallel_slopes(se = FALSE)
 Interpret all the model coefficients by applying the techniques you learned above. These interpretations will differ from those in `m1` and `m2` – coefficients are defined / interpreted differently depending upon what other predictors are in the model. HINT:
 
 -  First write out the estimated model formula:
-    salary = 81186 - 80 yrs.since.phd + 13932 rankAssocProf + 47860 rankProf
-
+$$
+    \widehat{salary} = 81186 - 80 \cdot yrs.since.phd + 13932 \cdot rankAssocProf + 47860 \cdot rankProf
+$$
 -  Then, notice that the presence of a categorical variable results in the separation of the model formula by group. To this end, plug in 0’s and 1’s to obtain 3 separate model formulas for the ranks:
 $$
 \widehat{salary}_{AssistProf} = 81186 -80 \cdot yrs.since.phd. \\
@@ -615,6 +616,12 @@ residuals(penguinmod)
 
 7. See if you can confirm that the mean residual equals 0. This property always holds for regression models!
 
+```{r}
+summary(residuals(penguinmod))
+mean(residuals(penguinmod))
+```
+
+
 8. Calculate the standard deviation of the residuals. Where does this information appear in `summary(penguinmod)` (within rounding error)? SIDENOTE: The Residual standard error is calculated slightly differently than the standard deviation of residuals. Let $\epsilon_i$ denote a residual for case $i$, $n$ as sample size, and $k$ the number of coefficients in our model (here we have 2), then the standard deviation of residuals are
 
 $$
@@ -625,16 +632,34 @@ whereas the residual standard error is
 $$
 \frac{\sum_{i=1}^n \epsilon_i^2}{n-k}
 $$
+
+```{r}
+sd(residuals(penguinmod))
+```
+
+
+
 Now that you have thought a lot about a simple linear regression model, explore some more variables. Try making plots to see if you can find other variables that help explain some variability in `flipper_length_mm`. 
+
+
 
 Then, try out a variety of models. Try using more than one variable, making parallel slopes, including interaction effects, etc. You can name your models as you go, but I am most interested in your "final" favorite model. 
 
 9. Write down your favorite model,
 
 ```{r}
-favmod <- ___
+favmod <- lm(flipper_length_mm ~ species + bill_depth_mm + body_mass_g + sex, 
+             data = penguins)
+summary(favmod)
 ```
 
 10. Why is this your preferred model? What is good about it?
 
 11. How would you visualize your model object? 
+
+
+```{r}
+ggplot(penguins, aes(x=body_mass_g, y=flipper_length_mm, color = species)) + 
+  geom_point()
+```
+

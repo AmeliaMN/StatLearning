@@ -18,7 +18,18 @@ library(readr)
 
 We are going to work with two datasets, one called `Physicians.csv` and the other called `policekillings.csv` (I don't have provenance information on these datasets, sorry!)
 
-Download those two .csv files and place them into the same folder as your RMarkdown file, or inside a sub-folder called something like `data`. 
+Download those two .csv files.  
+
+You can locate the files on [my GitHub](https://github.com/AmeliaMN/StatLearning/tree/main/data). Select "raw" to see the raw version of the file.
+
+![](img/data_raw.png)
+
+Then, right-click to download the file.
+
+![](img/right-click.png)
+
+Once you've downloaded those files, place them into the same folder as your RMarkdown file, or inside a sub-folder called something like `data`. 
+
 
 Let's read in `Physicians.csv` first.
 

@@ -1,4 +1,6 @@
-# Data wrangling for model assessment {#wrangle}
+# Data wrangling for model assessment
+
+[This "chapter" is essentially the same as \@ref(wrangle), but with some of the notes I wrote in the document as we went.]
 
 ```{r, echo = FALSE, message=FALSE, eval=TRUE}
 library(knitr)
@@ -19,13 +21,13 @@ verb | action | example
 -------|-------------|-------
 `select()` | take a subset of *columns* | `select(x,y)`, `select(-x)`
 `filter()` | take a subset of *rows* | `filter(x == __, y > __)`
-`arange()` | reorder the *rows* | `arrange(x)`, `arrange(desc(x))`
+`arrange()` | reorder the *rows* | `arrange(x)`, `arrange(desc(x))`
 `summarize()` | a many-to-one or many-to-few summary | `summarize(mean(x), median(y))` 
 `group_by()` | group the *rows* by a specified *column* | `group_by(x) %>% something()`
 `mutate()` | a many-to-many operation that creates a new variable | `mutate(x = ___, y = ___)`
 
 
-We'll use the `babynames` package to play with the verbs, so let's begin by loading that package, and then dataset.
+We'll use the `babynames` package to play with the verbs, so let's begin by loading that dataset.
 
 ```{r}
 library(babynames)
@@ -39,12 +41,6 @@ library(skimr)
 skim(babynames)
 ```
 
-Of course, to use `dplyr`, we need to load it!
-
-```{r}
-library(dplyr)
-```
-
 ### select()
 
 ```{r}
@@ -52,6 +48,11 @@ select(babynames, name, prop)
 ```
 
 1. Alter the code to select just the `n` column
+
+```{r}
+select(babynames, n)
+```
+
 
 #### select() helpers
 
