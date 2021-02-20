@@ -8,6 +8,9 @@ library(tweetrmd)
 
 We'll talk about the `dplyr` package, and assessing models. 
 
+Much of this code was adapted from [Master the Tidyverse](https://github.com/rstudio-education/master-the-tidyverse)
+
+
 ## dplyr verbs
 
 We have already seen some `dplyr` verbs, but we are going to need more as we move on. So, let's spend some time focusing on them. Here are the main verbs we will cover:
@@ -18,8 +21,8 @@ verb | action | example
 `filter()` | take a subset of *rows* | `filter(x == __, y > __)`
 `arange()` | reorder the *rows* | `arrange(x)`, `arrange(desc(x))`
 `summarize()` | a many-to-one or many-to-few summary | `summarize(mean(x), median(y))` 
-`mutate()` | a many-to-many operation that creates a new variable | `mutate(x = ___, y = ___)`
 `group_by()` | group the *rows* by a specified *column* | `group_by(x) %>% something()`
+`mutate()` | a many-to-many operation that creates a new variable | `mutate(x = ___, y = ___)`
 
 
 We'll use the `babynames` package to play with the verbs, so let's begin by loading that dataset.
@@ -130,6 +133,72 @@ arrange(babynames, desc(n))
 
 ## %>%, the pipe
 
+```{r, echo=FALSE, eval=TRUE}
+include_tweet("https://twitter.com/hadleywickham/status/1359852563726819332")
+```
+In other words, you can nest functions together in R, much like 
+
+$$
+f(g(x))
+$$
+
+but, once you go beyond a function or two, that becomes hard to read. 
+
+```{r, eval=FALSE}
+try(come_to_life(stretch(yawn(pour(stumble(tumble(I, out_of = "bed"), to = "the kitchen"), who = "myself", unit = "cup", what = "ambition")))))
+```
+
+The pipe allows you to unnest your functions, and pass data along a pipeline. 
+
+```{r, eval=FALSE}
+I %>%
+  tumble(out_of = "bed") %>%
+  stumble(to = "the kitchen") %>%
+  pour(who = "myself", unit = "cup", what = "ambition") %>%
+  yawn() %>%
+  stretch() %>%
+  try(come_to_life())
+```
+
+(Those examples are not valid R code!)
+
+We could see this with a more real-life example:
+
+```{r}
+arrange(select(filter(babynames, year == 2015, 
+  sex == "M"), name, n), desc(n))
+```
+
+What does this code do?
+
+```{r}
+babynames %>%
+  filter(year == 2015, sex == "M") %>%
+  select(name, n) %>%
+  arrange(desc(n))
+```
+
+What does this code do? 
+
+We pronounce the pipe, `%>%`, as "then."
+
+[Side note: many languages use `|` as the pipe, but that means "or" or "given" in R, depending on the syntax.]
+
+5. Use `%>%` to write a sequence of functions that
+  - Filter babynames to just the girls that were born in 2015
+  - Select the `name` and `n` columns
+  - Arrange the results so that the most popular names are near the top.
+
+6. [Combining `dplyr` knowledge with `ggplot2`!] 
+  - Trim `babynames` to just the rows that contain a particular name and sex. This could be your name/sex or that of a friend or famous person. 
+  - Trim the result to just the columns that you’ll need for the plot
+  - Plot the results as a line graph with `year` on the x axis and `prop` on the y axis
+  
+```{r}
+library(ggplot2)
+```
+  
+[Hint: "trim" here is a colloquial word, you will need to translate it to the appropriate `dplyr` verb in each case.]
 
 
 ## Modeling conditions
@@ -139,7 +208,7 @@ arrange(babynames, desc(n))
 When `R` finds the line of best fit, it is minimizing the sum of the squared residuals, 
 
 $$
-			SSE = \sum_{i=1}^n (y_i - \hat{y_i})^2, \qquad \hat{\sigma}_\epsilon = \sqrt{\frac{SSE}{n-2}}
+SSE = \sum_{i=1}^n (y_i - \hat{y_i})^2
 $$
 in order for the model to be appropriate, a number of conditions must be met. 
 
@@ -150,6 +219,288 @@ in order for the model to be appropriate, a number of conditions must be met.
 
 These conditions are mainly related to the distribution of the residuals. 
 
+ Assumption | Consequence | Diagnostic | Solution
+------------|------------|------------|------------
+
+Indepdence | inaccurate inference | common sense/context | use a different technique/ don't model
+$E(\epsilon)=0$ | lack of model fit | plot of residuals vs. fitted values | transform $x$ and/or $y$ 
+$Var(\epsilon)=\sigma^2$ | inaccurate inference | plot of residuals v. fitted values | transform $y$ 
+$\epsilon\sim N(\mu, \sigma)$ | if extreme, inaccurate inference | QQ plot | transform $y$ 
+
+We would like to be able to work with the residuals from our models to assess whether the conditions are met, as well as to determine which model explains the most variability. 
+
+We would like to be able to work with the model objects we created yesterday using `dplyr` verbs, but model objects are untidy objects. This is where the `broom` package comes in! `broom` helps you tidy up your models. Its two most useful functions are `augment` and `tidy`. 
+
+```{r}
+library(broom)
+```
+
+Let's re-create our simple linear regression model from before (again, I'm hoping this isn't just hanging out in your Environment already!). 
+
+```{r}
+m1 <- lm(salary ~ yrs.since.phd, data = Salaries)
+```
+
+```{r, echo=FALSE}
+m2 <- lm(salary~rank, data=Salaries)
+m3 <- lm(salary~rank+yrs.since.phd, data = Salaries)
+m4 <- lm(salary ~ yrs.since.phd + discipline, data = Salaries)
+m5 <- lm(salary~yrs.since.phd+discipline+yrs.since.phd*discipline, data = Salaries)
+m6 <- lm(salary~yrs.since.phd+yrs.service, data=Salaries)
+```
 
 
-Much of this code was adapted from [Master the Tidyverse](https://github.com/rstudio-education/master-the-tidyverse)
+Let's `augment()` that model. 
+```{r}
+m1_augmented <- augment(m1)
+```
+
+Look at the new object in your environment. What is it like? 
+
+One parameter to `augment()` is `data=`. Let's try again with that,
+
+```{r}
+m1_augmented <- augment(m1, data=Salaries)
+```
+
+What's different about that object? 
+
+
+We could use this augmented version of our dataset to do things like look for the largest residuals. 
+
+5. Use a `dplyr` verb to find the rows where we over-predicted the most. 
+
+```{r}
+m1_augmented %>%
+  ___()
+```
+
+We could also use this dataset to plot our residuals, to see if they conform to our conditions. One way to see residual plots is to use the convenience function `plot()` on our original model object.
+
+```{r}
+plot(m1)
+```
+
+But, a more flexible approach is to create our own residual plots. The augmented data allows us to do this!
+
+```{r}
+ggplot(m1_augmented, aes(x=.fitted, y=.resid)) + 
+  geom_point() + 
+  geom_smooth(se=FALSE)
+```
+
+```{r}
+ggplot(m1_augmented, aes(sample = .resid)) +
+  stat_qq() +
+  stat_qq_line()
+```
+
+One benefit to making our own residual plots is we can do things like color by a different variable, or facet the plot, to see if there is unexplained variability. 
+
+Try coloring the residual v. fitted plot by each of the categorical variables. Which categorical variable do you think explains the most additional variability? How can you tell?
+
+
+## More dplyr verbs
+
+So far we have learned about `filter`, `select` and `arrange`. Now we want to go into the verbs that modify the data in some way. First, `summarize`
+
+### summarize()
+
+[Note: both the British and American spellings are accepted! I use `summarize()` most of the time, but `summarise()` also works.]
+
+This can be thought of as a many-to-one operation. We are moving from many rows of data, and condensing down to just one.
+
+```{r}
+babynames %>% 
+  summarise(total = sum(n), max = max(n))
+```
+
+8. Use `summarize()` to compute three statistics about the data:
+  - The first (minimum) year in the dataset
+  - The last (maximum) year in the dataset
+  - The total number of children represented in the data
+
+There are a few useful helper functions for `summarize()`, 
+
+- `n()`, which counts the number of rows in a dataset or group
+- `n_distinct()`, which counts number of distinct values in a variable
+
+Right now, `n()` doesn't seem that useful
+
+```{r}
+babynames %>% 
+  summarise(n = n())
+```
+
+`n_distinct()` might seem better,
+
+```{r}
+babynames %>% 
+  summarise(n = n(), nname = n_distinct(name))
+```
+
+But, these become even more useful when combined with...
+
+### group_by()
+
+The `group_by()` function just groups cases by a common value of a particular variable.
+
+```{r}
+babynames %>% 
+  group_by(sex)
+```
+
+When combined with other `dplyr` verbs, it can be very useful!
+
+```{r}
+babynames %>% 
+  group_by(sex) %>%
+  summarise(total = sum(n))
+```
+
+### mutate()
+
+Our final single-table verb is `mutate()`. I think of `mutate()` as a many-to-many transformation. It adds additional columns (variables) to the data. 
+
+```{r}
+babynames %>%
+  mutate(percent = round(prop*100, 2))
+```
+
+```{r}
+babynames %>%
+  mutate(percent = round(prop*100, 2), nper = round(percent))
+```
+
+## More model analysis
+
+Since we have the residuals in `m1_augmented`, we can use that to compute the sum of squared residuals. 
+
+```{r}
+m1_augmented %>%
+  summarize(SSE = sum(.resid^2))
+```
+
+Notice that I'm naming my summary statistic, so I could use it later as a variable name.
+
+We can think of partitioning the variability in our response variable as follows,
+
+$$
+SST = SSM + SSE
+$$
+where
+
+\begin{eqnarray*}
+SST &=& \sum_{i=1}^n (y_i-\bar{y})^2 \\
+SSM &=& \sum_{i=1}^n (\bar{y} - \hat{y})^2 \\
+SSE &=& \sum_{i=1}^n (y_i -\hat{y})^2
+\end{eqnarray*}
+
+Let's find the other two sums of squares 
+
+```{r}
+m1_augmented %>%
+  mutate(meansalary = mean(salary)) %>%
+  summarize(SSE = sum(.resid^2), SSM = sum((meansalary - .fitted)^2), SST = sum((salary - meansalary)^2))
+```
+
+We don't have a nice way to interpret those sums of squares, but we can use them to calculate the $R^2$ value,
+
+$$
+R^2 = 1 - \frac{SSE}{SST} = \frac{SSM}{SST}
+$$
+```{r}
+m1_augmented %>%
+  mutate(meansalary = mean(salary)) %>%
+  summarize(SSE = sum(.resid^2), SSM = sum((meansalary - .fitted)^2), SST = sum((salary - meansalary)^2)) %>%
+  summarize(R2 = 1- SSE/SST)
+```
+
+We can use the $R^2$ value to **assess** the model. The larger the $R^2$ value, the more variability we can explain using the model. 
+
+Unfortunately, $R^2$ always increases as you add predictors, so it is not a good statistic for comparing between models. Instead, we should use adjusted $R^2$
+
+$$
+R^2_{adj} = 1- \frac{SSE/(n-1)}{SST/(n-k-1)}
+$$
+The adjusted $R^2$ doesn't have a nice interpretation, but it can be used to compare between models. 
+
+The $R^2$ and $R^2_{adj}$ values are given by the model summary table. 
+
+```{r}
+summary(m1)
+```
+
+We can also use the `tidy` function from `broom` to tidy up the model coefficients,
+
+```{r}
+tidy(m1)
+```
+
+and `glance` to look at model summaries,
+
+```{r}
+glance(m1) 
+```
+
+Try re-making a few more of our models from yesterday, and `glance`ing to see which one has the highest adjusted $R^2$. 
+
+Beyond $R^2$, another useful statistic for **assess**ing a model is the mean squared error, or the root mean squared error
+
+$$
+MSE = \frac{1}{n}\sum_{i=1}^n (y_i-\hat{y}_i)^2 \\
+RMSE = \sqrt{MSE}
+$$
+Try using `dplyr` verbs to compure the RMSE. 
+
+## Bonus: comment on theory!
+
+Although we are trying to "minimize" the sum of squared residuals, we don't have to use a simulation method. Regression is actually done using matrix operations. 
+
+Suppose we have a sample of $n$ subjects. For subject $i\in{1,...,n}$ let $Y_i$ denote the observed response value and $(x_{i1},x_{i2},\dots,x_{ik})$ denote the observed values of the $k$ predictors. Then we can collect our observed response values into a vector $y$, our predictor values into a matrix $X$, and our regression coefficients into a vector $\beta$. Note that a column of 1s is included for an intercept term in $X$:
+
+\begin{eqnarray*}y=
+\begin{pmatrix}
+y_1 \\
+y_2 \\
+\vdots \\
+y_n
+\end{pmatrix}, X = 
+\begin{pmatrix}
+1 & x_{11} x_{12} \dots x_{1k} \\
+1 & x_{21} & x_{22} & \dots x_{2k} \\
+\vdots & \vdots & \vdots & \dots & \vdots \\
+1 & x_{n1} & x_{n2} & \dots & x_{nk}
+\end{pmatrix}, \text{ and }
+\beta = \begin{pmatrix}
+beta_1 \\
+\beta_2 \\
+\vdots \\
+\beta_k
+\end{pmatrix}
+\end{eqnarray*}
+
+
+Then we can express the model $y_i=\beta_0+\beta_1 x_{i1}+\dots +\beta_{k}x_{ik}$ for $i\in{1,\dots,n}$ using linear algebra:
+
+$$
+y=X\beta
+$$
+Further, let $\hat{\beta}$ denote the vector of sample estimated $\hat{beta}$, and $\hat{y}$ denote the vector of predictions/model values:
+
+$$
+\hat{y}=X\hat{\beta}
+$$
+Thus the residual vector is
+$$
+y−\hat{y}=X\beta−X\hat{\beta}
+$$
+and the sum of squared residuals is
+$$
+(y−\hat{y})^T(y−\hat{y})
+$$
+Challenge: Prove that the following formula for sample coefficients $\beta$ are the least squares estimates of $\beta$, ie. they minimize the sum of squared residuals:
+$$
+\hat{\beta}=(X^TX)^{-1}X^Ty
+$$
+

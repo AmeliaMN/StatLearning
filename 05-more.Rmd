@@ -175,3 +175,68 @@ where $L_0$ is the likelihood from the constant model (using the mean) and $L$ i
 - Linearity of the logit
 - Independence 
 - Randomness
+
+## strings
+
+Sometimes you have messy character strings in your data, and you want to do something with them. The package `stringr` has lots of utilities, but even more often when I reach for that package I want the `separate` function from the `tidyr` package. 
+
+Let's look at the RailsTrails data from the book.
+
+```{r}
+data("RailsTrails")
+```
+
+
+Maybe we want to know about the suffixes (?) of the street names. In other words, are they St, Dr, etc? Let's use separate to pull that variable apart into two.
+
+```{r}
+RailsTrails <- RailsTrails %>%
+  separate(StreetName, into = c("name", "kind"), sep = " ", extra = "merge")
+```
+
+this isn't quite what we wanted. So, we need to do something a little more complicated. Let's try a `stringr` function. 
+
+
+```{r}
+data("RailsTrails")
+RailsTrails <- RailsTrails %>%
+  mutate(pieces = str_split(StreetName, " "))
+RailsTrails <- RailsTrails %>%
+  mutate(last_piece = map_chr(pieces, ~ .x[length(.x)]))
+```
+
+Eek, that one is pretty complicated! Let's try something a little simpler,
+
+```{r}
+data("RailsTrails")
+RailsTrails <- RailsTrails %>%
+  mutate(last_piece = word(StreetName, start = -1))
+```
+
+
+Finally, we might want to fix up the strings so they are more consistent,
+
+```{r}
+RailsTrails <- RailsTrails %>%
+  mutate(last_piece = as_factor(last_piece)) %>%
+  mutate(last_piece = fct_recode(last_piece,
+    `Drive` = "Dr",
+    `Road` = "Rd",
+    `Street` = "St",
+    `Drive` = "Dr.",
+    `Road` = "Rd.",
+    `Avenue` = "Ave"
+  ))
+ggplot(RailsTrails) +
+  geom_bar(aes(x = last_piece))
+```
+
+What if we want the barchart in order of frequency?
+
+```{r}
+RailsTrails <- RailsTrails %>%
+  mutate(last_piece = fct_infreq(last_piece))
+ggplot(RailsTrails) +
+  geom_bar(aes(x = last_piece))
+```
+

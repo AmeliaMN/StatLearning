@@ -1,16 +1,178 @@
 # Inference using simulation methods 
 
-This section will introduce some simulation methods: randomization and the bootstrap. We'll use the `infer` package. 
+This section is kind of a grab-bag of computational techniques in support of statistics and inference. We'll introduce some simulation methods: randomization and the bootstrap. We'll use the `infer` package. 
 
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 library(knitr)
 opts_chunk$set(eval = FALSE, message = FALSE, error = TRUE)
-library(tidyverse)
-library(skimr)
-library(infer)
-library(Stat2Data)
-data("FirstYearGPA")
+```
+
+## Reading in external data
+
+So far, we have been working with data that came from within R packages. But, most data we are interested in doesn't come built into R! So, we need to read the data into our environment. The R package `readr` will help with many common file formats. (Another file-reading package is called `haven`, and helps you read in specialty data formatsfrom other statistical packages like SAS and SPSS. If you use a particular kind of data, you can probably find a package to read it into R!)
+
+```{r, eval=TRUE}
+library(readr)
+```
+
+We are going to work with two datasets, one called `Physicians.csv` and the other called `policekillings.csv` (I don't have provenance information on these datasets, sorry!)
+
+Download those two .csv files and place them into the same folder as your RMarkdown file, or inside a sub-folder called something like `data`. 
+
+Let's read in `Physicians.csv` first.
+
+```{r, eval = TRUE}
+doctors <- read_csv("data/Physicians.csv")
+```
+
+
+As with other tidyverse functions, `read_csv` gives us a message, telling us how it parsed the data. We can change those defaults if we want to. 
+
+Right off the bat, we notice something strange-- the number of doctors is being read in as a character variable, meaning it is not numeric. We'll come back to that. 
+
+
+#### Renaming variables
+
+The variable names in this dataset are hard to use,
+```{r}
+names(doctors)
+```
+
+In order to run something like `skim()`, we'd have to use backtics to write out the variable name.
+
+```{r}
+doctors %>%
+  skim(`Physicians per 100,000 Population`)
+```
+
+We can manually rename that variable,
+
+```{r}
+doctors %>%
+  rename(Physicians = `Physicians per 100,000 Population`)
+```
+That's better! 
+
+Or, we could use a package to automatically fix all the names in a dataset. 
+
+```{r}
+# install.packages("janitor")
+library(janitor)
+
+doctors %>%
+  clean_names()
+```
+
+With either of these approaches, you would need to overwrite the original data with the renamed data in order to use it. For the sake of having a short name, let's use the `rename()` function. 
+
+```{r}
+doctors <- doctors %>%
+  rename(Physicians = `Physicians per 100,000 Population`)
+```
+
+#### Searching for strange issues in variables
+But, we've still got a variable type issue. When we run summary statistics, R complains because there is something weird in the data. Let's try `count()`ing up the values in the data. 
+
+```{r}
+doctors %>%
+  count(Physicians) %>%
+  arrange(desc(Physicians))
+```
+
+Now we see it! There's a strange NA value that R doesn't know how to deal with. We can actually add this into our data-reading-in code in `read_csv`. 
+
+```{r}
+doctors <- read_csv("data/Physicians.csv", 
+                    na = c("", NA, "N/A"))
+```
+
+Of course, we then have to redo our renaming. 
+```{r}
+doctors <- doctors %>%
+  rename(Physicians = `Physicians per 100,000 Population`)
+```
+
+1. Now, you try reading in the `policekillings.csv` dataset. 
+
+```{r, echo=FALSE}
+policekillings <- read_csv("data/policekillings.csv")
+```
+
+### Joining data 
+In the last section, we talked about one-table verbs from `dplyr`. But, another task we often need to do is combine data from one table with data from another table. 
+
+The command that allows you to combine data frames is a "join", which corresponds to the database operation called a `JOIN`. We will focus on the `left_join()` here, but there are many other types of joins. 
+
+When two database tables (or data frames) are joined, the rows of one table get matched to the rows of the other. Computers are exceptionally better suited for this task than humans, but the computer needs to be told what the criteria is for matching up the rows. The variable(s) upon which the matching is based are called a **key**. Both tables must contain the key columns, but there are variety of ways in which the matching can be done. 
+
+Joins can be complicated, so you may want to look at a visual explanation:
+
+- [visualization of database JOINs](http://www.codinghorror.com/blog/2007/10/a-visual-explanation-of-sql-joins.html) 
+- [shiny app about R joins](https://beta.rstudioconnect.com/content/1867/)
+- [data wrangling cheatsheet](https://www.rstudio.com/wp-content/uploads/2015/02/data-wrangling-cheatsheet.pdf)
+
+Let's say we want to join our `doctors` data and our `policekillings` data. We need a variable to "join on." In this case, we want to match states with states. Unfortunately, `doctors` has state names written out and `policekillings` just has the state abbreviations. We need to change one to match the other. 
+
+Luckily, R comes with a dataset on state names
+
+```{r}
+state.name
+state.abb
+```
+
+We can use this to make a new variable in the `policekillings` dataset. 
+
+```{r}
+policekillings <- policekillings %>%
+  mutate(state_long = state.name[match(state, state.abb)])
+skim(policekillings)
+```
+
+Now, we can do some joining. After all, if we want to understand the relationship between physicians and police killings, we have to have both variables in the same data frame. 
+
+Before we start, let's consider the dimensions of our two data frames.
+```{r}
+dim(policekillings)
+dim(doctors)
+```
+
+They don't have the same number of rows, so we should think about how large we want our data to be at the end of our join. Do we want to keep all 51 rows in `doctors` and match elements from `policekillings`, filling with NA values where there aren't matches? Or, are we more interested in `policekillings` and we want to just match the 47 states with elements from `doctors`?
+
+In databases, the default JOIN type is INNER JOIN. In this case only the rows that are present in *both* data frames get returned. In R, I find I most often use a `left_join`, which retains *all* of the records from the first data frame, regardless of whether there is a match in the second data frame. 
+Let's try a `left_join`. 
+
+```{r, error=TRUE}
+joinedData <- left_join(policekillings, doctors)
+```
+
+This throws an error, because it is expecting there to be a variable with the same name in each data set. To get it to work, we need to specify which variables to join on. 
+
+```{r}
+joinedData <- left_join(policekillings, doctors,
+  by = c("state_long" = "State")
+)
+skim(joinedData)
+```
+
+Notice that this dataset only has 47 observations, because there were only 47 in `policekillings` (the "left" in our `left_join`). We could have reversed the order of the datasets to get something slightly different.
+
+```{r}
+joinedData <- left_join(doctors, policekillings,
+  by = c("State" = "state_long")
+)
+skim(joinedData)
+```
+Now, the data has 51 observations! (We could have gotten the same result by running `right_join` with the data specified the same way as our first join.)
+
+## Fitting a model
+
+While that was a good example for joining data, we shouldn't use it for modeling because a major condition for linear regression is violated with the data set. (Which one?)
+
+So, let's read in another dataset to make some new models. 
+
+```{r}
+FirstYearGPA <- read_csv("data/FirstYearGPA.csv")
 ```
 
 ## Testing and training data
@@ -19,15 +181,9 @@ One computational strategy for **assess**ing a model is using training and testi
 
 The basic idea is to break your dataset into two parts: one for training the model (running `lm()`) and one for testing the model (running `predict()`). 
 
-In this example, we are trying once again to explain a college college student's `GPA` as a function of their score on the verbal section of the SAT. 
-
-```{r}
-data(FirstYearGPA)
-```
-
 ```{r}
 set.seed(42)
-which_train <- sample(1:219, size = 110, replace = FALSE)
+which_train <- sample(1:219, size = 131, replace = FALSE)
 
 training <- FirstYearGPA %>%
   slice(which_train)
@@ -89,7 +245,7 @@ testing %>%
   mutate(R2 = cor^2, shrinkage = summary(m1)$r.squared - R2)
 ```
 
-You want smaller shrinkage values. "Shrinkage of 10% or less should not be a problem, but a shrinkage of more than 50% would be worrisome."
+You want smaller shrinkage values. 
 
 We can also look at the residual plots for our testing data,
 
@@ -113,6 +269,43 @@ sd(residuals(m1))
 ```
 
 Those look pretty good to me!
+
+## Inference based on distributional approximations
+
+If you've taken a statistics class before, you have likely seen inference based on distributional approximations. This is inference using known probability distributions like the Normal distribution, t-distribution, F-distribution, etc. 
+
+In the case of a slope coefficient, one way to make inference would be to create a confidence interval,
+
+$$
+\hat{\beta}_1 \pm t^* \cdot SE_{\hat{\beta}_1}
+$$
+
+"We are 95\% confident that for a 1-unit increase in x, we would see an [increase/decrease] in the response of between [bottom] and [top] units."
+
+The other inferential task often done with distributional approximations is hypothesis testing. For regression, the hypotheses are 
+
+$$
+H_0: \beta_1 = 0 \\
+H_A: \beta_1 \neq 0 
+$$
+We can test the hypothesis by locating
+
+$$
+t = \frac{\hat{\beta_1}}{SE_{\hat{\beta_1}}}
+$$
+in a t-distribution with $df=n-k-1$. When you look at a regression summary, you see p-values based on $t$ values,
+
+```{r}
+summary(m1)
+```
+
+You can generate confidence intervals based on distributional approximations using `confint()`,
+
+```{r}
+confint(m1)
+```
+
+However, these distributional approximations only hold if the conditions are upheld. A more general solution is to use simulation-based inference. 
 
 
 ## Simulation-based inference
@@ -149,8 +342,8 @@ If `GPA` and `SATV` were really related, then there is a real relationship bindi
 
 The basic idea of the permutation test is to shuffle the mapping between the two variables many times (i.e. sample *without replacement*), and examine the distribution of the resulting slope coefficient. If the actual value of the slope is a rare member of that distribution, then we have evidence that the null hypothesis of $\beta_1=0$ might not be true. 
 
-* Execute the following code several times. Get a feel for how the regression line can change, depending on the permutation of the data. 
-* Do you still believe that the slope is non-zero?
+- Execute the following code several times. Get a feel for how the regression line can change, depending on the permutation of the data. 
+- Do you still believe that the slope is non-zero?
 
 ```{r, eval=FALSE}
 ggplot(data = FirstYearGPA, aes(x = shuffle(SATV), y = GPA)) +
@@ -189,9 +382,9 @@ Finally, we can find a non-parametric 95% confidence interval for the correlatio
 get_ci(slopetest)
 ```
 
-* Compare this confidence interval to the one returned by `confint()` on original model. Why are they different?
-* Perform the above procedure to test the slope value to predict `GPA` using `SATM`. 
-* Perform the above procedure to test the slope value to predict `GPA` using `HSGPA`. 
+- Compare this confidence interval to the one returned by `confint()` on original model. Why are they different?
+-  Perform the above procedure to test the slope value to predict `GPA` using `SATM`. 
+- Perform the above procedure to test the slope value to predict `GPA` using `HSGPA`. 
 
 #### The Bootstrap
 
@@ -253,14 +446,48 @@ visualize(slopeboot)
 ```
 
 
-
-
 - Create a bootstrap sample of at least 2000 and construct a confidence intervals using the bootstrap. How does this interval differ from the typical confidence interval? 
 
 - Construct bootstrapped confidence intervals for the $GPA \sim SATV$ and $GPA \sim SATM$ models. 
 
-#### Further Reading
+## Further Reading
 
 - The Boostrapping and Randomization chapters from @IsmKim. 
 - @Hest2015
 - @Efr1979
+
+## Homework
+
+Use the data from the `nycflights13` package to answer some questions about airline flight delays.
+
+```{r}
+library(nycflights13)
+```
+
+1. First, you will want to familiarize yourself with the datasets available in the package. There are multiple datasets:
+
+```{r}
+?airlines
+?airports
+?flights
+?planes
+?weather
+```
+
+You may need to make some data visualizations or summary statistics to better understand the data. 
+
+2. Determine which airline had the longest delays. Since we do not have airline codes memorized, we want to see the full name of the airlines, not the codes. In order to answer this question, you will need to join two datasets together. One dataset you will need is `flights`. 
+
+Use the following code skeleton to get started. 
+```{r}
+flights %>%
+  drop_na(arr_delay) %>%
+  ___________ %>% # join
+  group_by( ) %>% 
+  __________ %>% # compute arrival delays
+  arrange( ) # arrange arrival delays
+```
+
+3. Considering only flights arriving in Baltimore (BWI), see which single variable is the best predictor for delay. 
+
+4. Use bootstrapping to generate a confidence interval for the slope coefficient of your model. 

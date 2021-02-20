@@ -75,6 +75,7 @@ To get started, enter commands at the R prompt (i.e. right after
 `>` on the console); you can either type them in manually or copy and paste them from this document.
 
 Try typing some math into the Console, then hit Enter or Return. R can do anything a fancy calculator can:
+
 ```{r, eval = FALSE}
 2+2
 log(100)
@@ -345,7 +346,7 @@ You can also delete everything below that first code chunk. Knit again. Hot tip:
 Let's load a different dataset to play with. This dataset comes from the `fivethirtyeight` package, which you should have loaded above (if you get an error when trying to run the following code, make sure you have run `library(fivethirtyeight)` in your Console, or clicked the green triangle button in the code chunk). 
 
 ```{r}
-data("hiphop_cand_lyrics")
+data(hiphop_cand_lyrics)
 ```
 
 3. **Examine this dataset.**
