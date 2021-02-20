@@ -1,4 +1,6 @@
-# (Post-workshop) Visualizing and characterizing variability {#intro-sols}
+# (PART) Post workshop notes {-}
+
+# Visualizing and characterizing variability {#intro-sols}
 
 [This "chapter" is essentially the same as \@ref(intro), but with some of the notes I wrote in the document as we went.]
 
