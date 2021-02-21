@@ -287,6 +287,8 @@ We could also use this dataset to plot our residuals, to see if they conform to 
 plot(m1)
 ```
 
+For more on QQ plots, see [this post by Sean Kross](https://seankross.com/2016/02/29/A-Q-Q-Plot-Dissection-Kit.html)
+
 But, a more flexible approach is to create our own residual plots. The augmented data allows us to do this!
 
 ```{r}

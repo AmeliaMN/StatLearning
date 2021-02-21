@@ -6,7 +6,7 @@
 
 ```{r, echo = FALSE, message=FALSE, eval=TRUE}
 library(knitr)
-opts_chunk$set(eval = FALSE, message = FALSE, error = TRUE)
+opts_chunk$set(eval = TRUE, message = FALSE, error = TRUE)
 library(tweetrmd)
 ```
 
@@ -132,7 +132,7 @@ ggplot(Salaries, aes(x = salary, fill = discipline)) +
 If `yrs.since.phd` and `discpline` both explain some variability in `salary`, why not look at all the variables at once?
 
 ```{r}
-ggplot(Salaries, aes(y = ___, x = ___, color = ___)) + 
+ggplot(Salaries, aes(y = salary, x = yrs.since.phd, color = discipline)) + 
     geom_point(alpha = 0.5)
 ```
 
@@ -141,7 +141,7 @@ ggplot(Salaries, aes(y = ___, x = ___, color = ___)) +
 Think back to our sketches. How might we include information about `yrs.service` in our plots? 
 
 ```{r}
-ggplot(Salaries, aes(x= yrs.since.phd, y= salary, ___ = yrs.service)) +
+ggplot(Salaries, aes(x= yrs.since.phd, y= salary, color = yrs.service)) +
   geom_point(alpha=0.5)
 ```
 
@@ -582,12 +582,8 @@ Let's use our sample data to estimate the population model.
 1. Fit a simple linear regression, and look at the summary:
 
 ```{r}
-penguinmod <- ___
-summary(___)
-```
-
-```{r, echo=FALSE, eval=TRUE}
 penguinmod <- lm(flipper_length_mm~body_mass_g, data=penguins)
+summary(penguinmod)
 ```
 2. What is the equation of the fitted model? 
 

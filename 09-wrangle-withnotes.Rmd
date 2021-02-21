@@ -4,7 +4,7 @@
 
 ```{r, echo = FALSE, message=FALSE, eval=TRUE}
 library(knitr)
-opts_chunk$set(eval = FALSE, message = FALSE, error = TRUE)
+opts_chunk$set(eval = TRUE, message = FALSE, error = TRUE)
 library(tweetrmd)
 ```
 
@@ -44,6 +44,7 @@ skim(babynames)
 ### select()
 
 ```{r}
+library(dplyr)
 select(babynames, name, prop)
 ```
 
@@ -241,6 +242,7 @@ We pronounce the pipe, `%>%`, as "then."
   - Arrange the results so that the most popular names are near the top.
   
 ```{r}
+library(ggplot2)
 babynames %>%
   filter(name %in% c("Amelia", "Richard", "Sofia")) %>%
   ggplot(aes(x=year, y=n, color = name)) + 
@@ -298,6 +300,8 @@ library(broom)
 Let's re-create our simple linear regression model from before (again, I'm hoping this isn't just hanging out in your Environment already!). 
 
 ```{r}
+library(car)
+data(Salaries)
 m1 <- lm(salary ~ yrs.since.phd, data = Salaries)
 ```
 

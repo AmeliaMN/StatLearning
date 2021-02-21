@@ -1,8 +1,10 @@
-# More complex models {#logistic}
+# More complex models 
+
+[This "chapter" is essentially the same as \@ref(logistic), but with some of the notes I wrote in the document as we went.]
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 library(knitr)
-opts_chunk$set(eval = FALSE, message = FALSE, error = TRUE)
+opts_chunk$set(eval = TRUE, message = FALSE, error = TRUE)
 ```
 
 This will include logistic regression, as well as potentially more models as time allows! Packages introduced: `forcats`, `stringr`.
@@ -67,21 +69,33 @@ football <- read_csv("data/nfl2008_fga.csv")
 
 ```{r}
 ggplot(football) +
-  geom_point(aes(x = distance, y = GOOD))
+  geom_point(aes(x = distance, y = jitter(GOOD)))
 ```
+
+## Recall, probability and odds
+
+probability ($\pi$) | odds ($\pi/(1-\pi)$) 
+--------|------------
+1/2 | 1/1 or 1:1
+1/3 | 1/2 or 1:2
+1/4 | 1/3 or 1:3
+1/5 | 1/4 or 1:4
+2/3 | 2/1 or 2:1 or 2
+3/4 | 3/1 or 3:1 or 3
 
 It would be bad practice to fit
 
 ```{r, eval=TRUE}
 lm1 <- lm(GOOD~distance, data = football)
 ggplot(football, aes(x = distance, y = GOOD)) +
-  geom_point() + 
+  geom_point(aes(y = GOOD)) + 
   geom_smooth(method="lm", se = FALSE)
 ```
 
 Instead, we should fit
 ```{r, eval=TRUE}
 logm1 <- glm(GOOD ~ distance, data = football, family = binomial)
+summary(logm1)
 ```
 
 This model is more complicated than the other ones we've seen. 
@@ -112,6 +126,14 @@ ggplot(football_logm1, aes(x = distance)) +
 
 Why is this useful?
 
+Because we know nice interpretation sentences for linear models.
+
+$$
+\log\left(\frac{\pi}{1-\pi}\right) = 6.8 - 0.12\cdot distance
+$$
+For a 1-year increase in distance, we would expect the log-odds to decrease by 0.12. 
+
+
 ### Odds space
 
 $$
@@ -124,6 +146,14 @@ ggplot(football_logm1, aes(x = distance)) +
 ```
 
 Why is this useful? 
+
+Because we have a nice interpretation sentence in this space. 
+
+```{r}
+exp(coef(logm1))
+```
+
+"For a 1-yard increase in the distance from the goal, we multiply the odds of making the goal by a factor of 0.89. (That is, the odds go down.)" 
 
 ### Probability space
 
@@ -138,6 +168,10 @@ ggplot(football_logm1, aes(x = distance)) +
 ```
 
 Why is this useful?
+Pro:
+Because we can plot the data on the same plot as the line.
+Con:
+There's no nice interpretation sentence in probability space. 
 
 ## Fitting a logistic model
 
@@ -152,7 +186,7 @@ logm1 <- glm(GOOD ~ distance, data = football, family = binomial)
 1. How can we interpret the coefficients of this model in the context of the problem? 
 
 ```{r}
-summary(logm1)
+coef(logm1)
 exp(coef(logm1))
 ```
 
@@ -161,7 +195,12 @@ The interpretation of the coefficients in a linear regression model are clear ba
 I have created a [shiny app](https://ameliamn.shinyapps.io/log_app/) that will allow you to experiment with changes to the intercept and slope coefficients in the simple logistic model for `isAlive` as a function of `age`.
 
 2. How do changes in the intercept term affect the shape of the logistic curve?
+
+Moves the curve left and right
+
 3. How do changes in the slope term affect the shape of the logistic curve?
+
+Impacts the steepness of the drop between 1 and 0. 
 
 ### Interptetation
 
@@ -178,6 +217,7 @@ Like we did with linear regression, the `broom` package can do the work of tidyi
 
 
 ```{r}
+library(broom)
 football_logm1 <- augment(logm1, data = football)
 ```
 
@@ -225,7 +265,9 @@ In order to plot data points in those spaces, it can be useful to **bin** the ex
 
 ```{r}
 football <- football %>%
-  mutate(distGroup = cut(distance, breaks = 10))
+  mutate(distGroup = cut(distance, 
+                         breaks = seq(from = 0, to = 100, by = 10)))
+library(skimr)
 football %>%
   group_by(distGroup) %>%
   skim(GOOD)
@@ -235,7 +277,9 @@ football %>%
 ```{r}
 football_binned <- football %>%
   group_by(distGroup) %>%
-  summarize(binnedGOOD = mean(GOOD), binnedDist = mean(distance)) %>%
+  summarize(binnedGOOD = mean(GOOD), 
+            binnedDist = mean(distance)) %>%
+  mutate(binnedGOOD = if_else(binnedGOOD == 0, 0.01, binnedGOOD)) %>%
   mutate(logit = log(binnedGOOD/(1-binnedGOOD)))
 ```
 
@@ -282,6 +326,8 @@ ggplot(football_binned) +
 
 8. Does it look like the linearity condition is upheld? 
 
+Yeah, it looks okay. 
+
 ## Comparing to a null model
 
 We'd like to consider how well this model is working by looking at its predictions, and comparing them to a null model. The most boring prediction we could use is the mean, 
@@ -303,7 +349,7 @@ football_logm1 <- football_logm1 %>%
 ```{r}
 football_logm1 %>%
   group_by(GOOD, predictGOOD) %>%
-  summarize(n())
+  summarize(n = n())
 ```
 
 14. How many observations did we correct? How many incorrect? 
@@ -318,8 +364,10 @@ Just as with linear regression, we can use arbitrarily many predictors in our lo
 Try generating a model with multiple predictor variables. 
 
 ```{r}
-logm2 <- __(__~__, data = __, family = __)
+logm2 <- glm(GOOD~distance+togo, data = football, family = binomial)
+logm2_augment <- augment(logm2)
 ```
+
 
 
 
@@ -336,7 +384,7 @@ Sometimes you have messy character strings in your data, and you want to do some
 library(tidyr)
 ```
 
-Let's look at the RailsTrails dataset. This is technically `data(RailsTrails, package = "Stat2Data")`, but again, I wrote it out to a .csv to give you more practice downloading and importing data. It is available on [my GitHub](https://raw.githubusercontent.com/AmeliaMN/StatLearning/main/data/RailsTrails.csv). 
+Let's look at the RailsTrails dataset. This is technically `data(RailsTrails, package = "Stat2Data")`, but again, I wrote it out to a .csv to give you more practice downloading and importing data.  It is available on [my GitHub](https://raw.githubusercontent.com/AmeliaMN/StatLearning/main/data/RailsTrails.csv).
 
 ```{r}
 RailsTrails <- read_csv("data/RailsTrails.csv")
@@ -357,6 +405,7 @@ this isn't quite what we wanted. Weird! Like I said, `separate` is the solution 
 Today, we need to do something a little more complicated. Let's try a `stringr` function. 
 
 ```{r}
+library(stringr)
 library(purrr)
 RailsTrails %>%
   mutate(pieces = str_split(StreetName, " ")) %>%

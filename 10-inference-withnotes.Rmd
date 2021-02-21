@@ -8,7 +8,7 @@ This section is kind of a grab-bag of computational techniques in support of sta
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 library(knitr)
-opts_chunk$set(eval = FALSE, message = FALSE, error = TRUE)
+opts_chunk$set(eval = TRUE, message = FALSE, error = TRUE)
 ```
 
 ## Reading in external data
@@ -30,10 +30,6 @@ You can locate the files on [my GitHub](https://github.com/AmeliaMN/StatLearning
 Then, right-click to download the file.
 
 ![](img/right-click.png)
-
-```{r}
-read_csv("")
-```
 
 
 Once you've downloaded those files, place them into the same folder as your RMarkdown file, or inside a sub-folder called something like `data`. 
@@ -201,6 +197,7 @@ While that was a good example for joining data, we shouldn't use it for modeling
 So, let's read in another dataset to make some new models. 
 
 ```{r}
+library(readr)
 FirstYearGPA <- read_csv("data/FirstYearGPA.csv")
 ```
 
@@ -279,6 +276,7 @@ You want smaller shrinkage values.
 We can also look at the residual plots for our testing data,
 
 ```{r}
+library(ggplot2)
 ggplot(testing, aes(x = yhats, y = residuals)) +
   geom_point() +
   geom_smooth(se = FALSE)
@@ -388,9 +386,8 @@ The basic idea of the permutation test is to shuffle the mapping between the two
 - Execute the following code several times. Get a feel for how the regression line can change, depending on the permutation of the data. 
 - Do you still believe that the slope is non-zero?
 
-```{r, eval=FALSE}
-library(mosaic)
-ggplot(data = FirstYearGPA, aes(x = shuffle(SATV), 
+```{r}
+ggplot(data = FirstYearGPA, aes(x = mosaic::shuffle(SATV), 
                                 y = GPA)) +
   geom_point() +
   geom_smooth(method = lm, se = FALSE)
@@ -398,24 +395,24 @@ ggplot(data = FirstYearGPA, aes(x = shuffle(SATV),
 
 The procedure for the randomization test is simple. We simply shuffle the response variable and compute the resulting slope with the explanatory variable. But we do this many times, until we have a sense of the distribution of that slope coefficient. We then examine where the observed slope falls in that distribution. 
 
-```{r}
+```{r, cache = TRUE}
 library(infer)
 slopetest <- FirstYearGPA %>%
   specify(response = GPA, explanatory = SATV) %>%
   hypothesize(null = "independence") %>%
   generate(reps = 5000, type = "permute") %>%
   calculate(stat = "slope")
-
+library(ggplot2)
 ggplot(data = slopetest, aes(x = stat)) +
   geom_density() +
-  geom_vline(xintercept = 0.0001, color = "red")
+  geom_vline(xintercept = 0.0016986, color = "red")
 ```
 
 This looks pretty weird, visually!
 
 Of course, we can also explicitly find where in the distribution the observed slope lies. 
 
-```{r, eval=FALSE}
+```{r}
 slopetest %>%
   get_p_value(obs_stat = 0.0016986, direction = "both")
 ```
@@ -424,14 +421,14 @@ slopetest %>%
 
 Finally, we can find a non-parametric 95% confidence interval for the correlation coefficient. The interpretation here is if our actual slope value fell in this interval, we would **not**  consider it statistically significant.  
 
-```{r, eval=FALSE}
+```{r}
 get_ci(slopetest)
 ```
 
 - Compare this confidence interval to the one returned by `confint()` on original model. Why are they different?
 -  Perform the above procedure to test the slope value to predict `GPA` using `SATM`. 
 
-```{r}
+```{r, cache = TRUE}
 slopetest <- FirstYearGPA %>%
   specify(response = GPA, explanatory = SATM) %>%
   hypothesize(null = "independence") %>%
@@ -454,7 +451,7 @@ m1 <- lm(salary ~ discipline, data = Salaries)
 summary(m1)
 ```
 
-```{r}
+```{r, cache = TRUE}
 slopetest <- Salaries %>%
   specify(response = salary, explanatory = sex) %>%
   hypothesize(null = "independence") %>%
@@ -486,7 +483,7 @@ ggplot(data = FirstYearGPA, aes(x = SATV, y = GPA)) +
 
 To create a bootstrap sample, we select rows from the data frame uniformly at random, but with replacement. 
 
-```{r, eval=FALSE}
+```{r}
 # this needs the mosaic package again!
 ggplot(data = mosaic::resample(FirstYearGPA), 
        aes(x = SATV, y = GPA)) +
@@ -510,7 +507,7 @@ confint(m1)
 
 Now let's create a bootstrap distribution for the regression coefficients.
 
-```{r, eval=FALSE}
+```{r, cache=TRUE}
 # I'm only doing 100 samples, but you should do more!
 slopeboot <- FirstYearGPA %>%
   specify(response = GPA, explanatory = SATV) %>%
@@ -519,14 +516,14 @@ slopeboot <- FirstYearGPA %>%
 
 ggplot(data = slopeboot, aes(x = stat)) +
   geom_histogram() +
-  geom_vline(xintercept = 0.0016986, color = "red")
+  geom_vline(xintercept =  0.0016986, color = "red")
 ```
 
 The bootstrap distribution will always be centered around the sample statistic from our real data, but shows us some other likely values for the coefficient (essentially, sampling error). One way to quantify this variability is to create a confidence interval. 
 
 There are several methods constructing confidence intervals from the bootstrap. My preferred method does not require that the bootstrap distribution be normal, but works best when it is roughly symmetric. In this case we simply use the percentiles of the bootstrap distribution to build confidence intervals. This method makes the most sense in the most cases. 
 
-```{r, eval=FALSE}
+```{r}
 get_ci(slopeboot, level = 0.9)
 visualize(slopeboot)
 ```
@@ -538,7 +535,7 @@ visualize(slopeboot)
 
 - Construct bootstrapped confidence intervals for the $GPA \sim SATV$ and $GPA \sim SATM$ models. 
 
-```{r}
+```{r, cache=TRUE}
 data("Cars2015", package = "Lock5Data")
 m1 <- lm(UTurn~PageNum, data=Cars2015)
 summary(m1)
@@ -598,14 +595,20 @@ You may need to make some data visualizations or summary statistics to better un
 
 Use the following code skeleton to get started. 
 ```{r}
+library(dplyr)
+library(tidyr)
 flights %>%
   drop_na(arr_delay) %>%
-  ___________ %>% # join
-  group_by( ) %>% 
-  __________ %>% # compute arrival delays
-  arrange( ) # arrange arrival delays
+  left_join(airlines, by = c("carrier" = "carrier")) %>% # join
+  group_by(name) %>% 
+  summarize(meandelay = mean(arr_delay)) %>% # compute arrival delays
+  arrange(desc(meandelay)) # arrange arrival delays
 ```
 
 3. Considering only flights arriving in Baltimore (BWI), see which single variable is the best predictor for delay. 
+
+```{r}
+
+```
 
 4. Use bootstrapping to generate a confidence interval for the slope coefficient of your model. 
