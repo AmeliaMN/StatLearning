@@ -1,0 +1,131 @@
+# Homework
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(knitr)
+opts_chunk$set(eval = FALSE, message = FALSE, error = TRUE)
+```
+
+
+This is our last day, so I really shouldn't be giving homework! But, now would be a great time to try a data analysis/statistics project on some data that interests you. If you have a dataset already, great! Otherwise, see below for some places to look.
+
+## Understanding the basics
+
+Start by understanding the data that is available to you. If you have a codebook, you have struck gold! If not (the more common case), you’ll need to do some detective work that often involves talking to people. At this stage, ask yourself:
+
+- Where does my data come from? How was it collected?6
+- Is there a codebook? If not, how can I learn about it?
+- Are there people I can reach out to who have experience with this data?
+
+Next, you need to load the data and clean it. Once the data is loaded, ask yourself about each table:
+
+- What is an observation?
+- How many observations are there?
+- What is the meaning of each variable?
+- What is the type of each variable (date, location, string, factor, number, boolean, etc.)?
+
+Some great methods to start with are the functions
+
+- `str()` to learn about the numbers of variables and observations as well as the classes of variables
+- `skim()` to see many summary statistics about each variable
+
+Some good things to check:
+
+- Are all the variables of the type you expect? For example, make sure that zipcodes are being considered as `chr` or `Factor` variable, rather than a `num` or `int`. 
+- Look at the variable names in your data. Are they readable? Do they include spaces, periods, underscores, or other things that will make them hard to type? Are they helpful and contextual? For example, you would want `Airport` and `WaterTemp`, not `Individuals` and `Treatments`, and certainly not `A` and `B` as variable names. 
+- Look at the category names. Are they readable? Are they understandable phrases or cryptic codes? For example, do they use `Male` and `Female` or something like `1` and `2`? A binary variable `isFemale` could be coded 0 for male, and 1 for female (and then is self-documenting). A variable `sex` coded 1 and 2 is just asking for trouble.
+- Look at the min, max, and number of missing values for each of the variables. Do those values make sense? 
+
+Finally, ask yourself about the relationships between tables:
+
+- What variables link the tables (i.e., which variables can you use in join commands)?
+
+## Visualize and describe
+
+Once you have the data loaded and cleaned, it is usually helpful to do some univariate visualization; e.g., plotting histograms, densities, and box plots of different variables. You might ask questions such as:
+
+- What do you see that is interesting?
+- Which values are most common or unusual (outliers)?
+- Is there a lot of missing data?
+- What type of variation occurs within the individual variables?
+- What might be causing the interesting findings?
+- How could you figure out whether your ideas are correct?
+
+Once you have done some univariate visualization, you might examine the covariation between different variables.
+
+## Formulate a research question
+
+You will often end up with a ton of data, and it can be easy to be overwhelmed. How should you get started? One easy idea is to brainstorm ideas for research questions, and pick one that seems promising. This process is much easier with more than one brain! You will often be working off of a broad question posed by your business, organization, or supervisor, and be thinking about how to narrow it down. To do so, you can again revisit questions like "What patterns do you see?" or "Why might they be occurring?"
+
+## Try some models!
+
+Test out some of the modeling techniques we have examined on your data. 
+
+- How do the predictions on a test data set compare to a null model? 
+- What measures of accuracy are you using? 
+- Try some models that include a larger number of explanatory variables. 
+- Try to fit a model that provides some insights (not necessarily high prediction accuracy), and demonstrate these insights with a visualization.
+
+## Communicate your findings
+
+Once you have something you think is interesting, clean up your RMarkdown document to only include the most relevant visualizations, summary statistics, and models. Knit often to ensure that all the necessary pieces are included, but try to streamline your document. Fill in narrative to explain the project. Check out the [RMarkdown cheatsheet](https://rstudio.com/wp-content/uploads/2016/03/rmarkdown-cheatsheet-2.0.pdf) and perhaps change some chunk options to make the narrative clearer. For example, you may want to include `echo=FALSE` to hide all the code, and only display the results. 
+
+
+
+
+## Places to find data
+
+### Inside R!
+Of course, he very easiest way to get data inside R is to find some that came with an R package. To see the datasets you have access to in R, type the following in your Console:
+
+```{r}
+data()
+```
+
+A new window will pop up, near where your data preview and RMarkdown documents are. This lists all the datasets you have access to! On my computer, the first one is called AirPassengers. If I wanted to read more about that dataset, I could use the ?, again in the Console
+
+```{r}
+?AirPassengers
+```
+
+(that one isn't very interesting, it only has one variable!)
+
+Then, if I found a dataset I wanted to use for my project, I would load it in my RMarkdown document like this,
+
+````{r}
+data("AirPassengers")
+```
+
+This is instead of the `read_csv` stuff we do when we have a csv file
+
+### On the web
+If you don't like the look of any of those datasets, you can search for a file on the web. 
+
+When you look for data, try to find a dataset that is in .csv format, or .xls (Excel) format. R can read in other types of data, but those two are the easiest.
+
+Here are some of my favorite places to find data:
+
+- Data is Plural [tinyletter](https://tinyletter.com/data-is-plural) and associated [spreadsheet](https://docs.google.com/spreadsheets/d/1wZhPLMCHKJvwOkP4juclhjFgqIY8fQFMemwKL2c64vk/edit#gid=0) This is my favorite, but it's also the craziest. I recommend using your browser's search function to find a keyword in the spreadsheet (e.g., search for "golf" or "race" to find data on those topics)
+
+- [Tidy Tuesday](https://www.tidytuesday.com/) is a weekly data visualization challenge/community! All of the past data is [archived on GitHub](https://github.com/rfordatascience/tidytuesday). Bonus: if you complete an analysis in the designated week and tweet it, many people will retweet your project! (Tag me and I definitely will!)
+
+- FiveThirtyEight [data archive](https://github.com/fivethirtyeight/data) Datasets that go along with stories FiveThirtyEight has written
+
+- [Data.gov](https://www.data.gov/) 186,000+ datasets! Good ones are the American Time Use Survey and the Youth Behavioral Risk survey, but again, search for topics that interest you.
+
+- [Pew Research Center](https://www.pewresearch.org/)  a place that does lots of opinion surveys. If you want to know what people think about politics, technology, Millennials, etc., this is the place to go.
+
+- [Google dataset search](https://toolbox.google.com/datasetsearch) a version of google that just searches for data. Works just like regular google, so you can write things like `-site:figshare.com` if you want to exclude figshare results (for example).
+
+- IRE and NICAR are good resources for the types of data journalists care about. For example, [Energy data sources](https://github.com/InsideEnergy/24-energy-stories-CAR16) and [Chrys Wu's resource page](http://blog.chryswu.com/2016/03/08/nicar16-slides-links-tutorials-resources/). 
+
+- Jo Hardin at Pomona College has a [nice list](http://research.pomona.edu/johardin/datasources/) of data sources on her website. 
+
+- U.S. [Bureau of Labor Statistics](http://www.bls.gov/) 
+
+- U.S. [Census Bureau](http://www.census.gov)
+
+- [Gapminder](https://www.gapminder.org/data/), data about the world. 
+
+-   Nathan Yau's (old) [guide to finding data on the internet](http://flowingdata.com/2009/10/01/30-resources-to-find-the-data-you-need/)
+
+

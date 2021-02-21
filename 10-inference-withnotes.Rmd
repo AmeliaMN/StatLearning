@@ -13,7 +13,7 @@ opts_chunk$set(eval = FALSE, message = FALSE, error = TRUE)
 
 ## Reading in external data
 
-So far, we have been working with data that came from within R packages. But, most data we are interested in doesn't come built into R! So, we need to read the data into our environment. The R package `readr` will help with many common file formats. (Another file-reading package is called `haven`, and helps you read in specialty data formatsfrom other statistical packages like SAS and SPSS. If you use a particular kind of data, you can probably find a package to read it into R!)
+So far, we have been working with data that came from within R packages. But, most data we are interested in doesn't come built into R! So, we need to read the data into our environment. The R package `readr` will help with many common file formats. (Another file-reading package is called `haven`, and helps you read in specialty data formats from other statistical packages like SAS and SPSS. There's also `readxl` for Excel sheets. If you use a particular kind of data, you can probably find a package to read it into R!)
 
 ```{r, eval=TRUE}
 library(readr)
@@ -30,6 +30,11 @@ You can locate the files on [my GitHub](https://github.com/AmeliaMN/StatLearning
 Then, right-click to download the file.
 
 ![](img/right-click.png)
+
+```{r}
+read_csv("")
+```
+
 
 Once you've downloaded those files, place them into the same folder as your RMarkdown file, or inside a sub-folder called something like `data`. 
 
@@ -56,6 +61,7 @@ names(doctors)
 In order to run something like `skim()`, we'd have to use backtics to write out the variable name.
 
 ```{r}
+library(skimr)
 doctors %>%
   skim(`Physicians per 100,000 Population`)
 ```
@@ -63,6 +69,7 @@ doctors %>%
 We can manually rename that variable,
 
 ```{r}
+library(dplyr)
 doctors %>%
   rename(Physicians = `Physicians per 100,000 Population`)
 ```
@@ -75,7 +82,8 @@ Or, we could use a package to automatically fix all the names in a dataset.
 library(janitor)
 
 doctors %>%
-  clean_names()
+  clean_names() %>%
+  skim(physicians_per_100_000_population)
 ```
 
 With either of these approaches, you would need to overwrite the original data with the renamed data in order to use it. For the sake of having a short name, let's use the `rename()` function. 
@@ -107,6 +115,11 @@ doctors <- doctors %>%
   rename(Physicians = `Physicians per 100,000 Population`)
 ```
 
+```{r}
+doctors %>%
+  summarize(mean = mean(Physicians, na.rm = TRUE))
+```
+
 1. Now, you try reading in the `policekillings.csv` dataset. 
 
 ```{r, echo=FALSE}
@@ -124,7 +137,7 @@ Joins can be complicated, so you may want to look at a visual explanation:
 
 - [visualization of database JOINs](http://www.codinghorror.com/blog/2007/10/a-visual-explanation-of-sql-joins.html) 
 - [shiny app about R joins](https://beta.rstudioconnect.com/content/1867/)
-- [data wrangling cheatsheet](https://www.rstudio.com/wp-content/uploads/2015/02/data-wrangling-cheatsheet.pdf)
+- [data transformation cheatsheet](https://github.com/rstudio/cheatsheets/raw/master/data-transformation.pdf)
 
 Let's say we want to join our `doctors` data and our `policekillings` data. We need a variable to "join on." In this case, we want to match states with states. Unfortunately, `doctors` has state names written out and `policekillings` just has the state abbreviations. We need to change one to match the other. 
 
@@ -151,12 +164,14 @@ dim(policekillings)
 dim(doctors)
 ```
 
-They don't have the same number of rows, so we should think about how large we want our data to be at the end of our join. Do we want to keep all 51 rows in `doctors` and match elements from `policekillings`, filling with NA values where there aren't matches? Or, are we more interested in `policekillings` and we want to just match the 47 states with elements from `doctors`?
+They don't have the same number of rows, so we should think about how large we want our data to be at the end of our join. Do we want to keep all 53 rows in `doctors` and match elements from `policekillings`, filling with NA values where there aren't matches? Or, are we more interested in `policekillings` and we want to just match the 47 states with elements from `doctors`?
 
 In databases, the default JOIN type is INNER JOIN. In this case only the rows that are present in *both* data frames get returned. In R, I find I most often use a `left_join`, which retains *all* of the records from the first data frame, regardless of whether there is a match in the second data frame. 
+
 Let's try a `left_join`. 
 
 ```{r, error=TRUE}
+library(dplyr)
 joinedData <- left_join(policekillings, doctors)
 ```
 
@@ -286,9 +301,16 @@ Those look pretty good to me!
 
 ## Inference based on distributional approximations
 
+```{r}
+m1 <- lm(GPA ~ HSGPA + HU + White, data = FirstYearGPA)
+summary(m1)
+```
+
 If you've taken a statistics class before, you have likely seen inference based on distributional approximations. This is inference using known probability distributions like the Normal distribution, t-distribution, F-distribution, etc. 
 
 In the case of a slope coefficient, one way to make inference would be to create a confidence interval,
+
+"what are some other reasonable values we could have observed?" 
 
 $$
 \hat{\beta}_1 \pm t^* \cdot SE_{\hat{\beta}_1}
@@ -298,15 +320,19 @@ $$
 
 The other inferential task often done with distributional approximations is hypothesis testing. For regression, the hypotheses are 
 
+"is this number different from 0?"
+
 $$
 H_0: \beta_1 = 0 \\
 H_A: \beta_1 \neq 0 
 $$
+
 We can test the hypothesis by locating
 
 $$
 t = \frac{\hat{\beta_1}}{SE_{\hat{\beta_1}}}
 $$
+
 in a t-distribution with $df=n-k-1$. When you look at a regression summary, you see p-values based on $t$ values,
 
 ```{r}
@@ -333,6 +359,9 @@ Recall that the inference for linear regression relies on the assumptions that t
 We know how to assess whether these conditions are met, and we have learned a few techniques for correcting them when they are not (e.g. transformations). Today, we will learn a few techniques based on simulation for making *non-parametric* inferences. Such inferences do not rely on stringent assumptions about the distribution on of the residuals. 
 
 ## Randomization (Permutation) Tests
+
+Goes with hypothesis tests. "Is this number different than 0?"
+
 We'll consider how we could make inference about a relationship using simulation methods. To do this, we'll use a randomization test. 
 
 Before we begin, let's examine the relationship between two variables from the `FirstYearGPA` dataset graphically. 
@@ -343,7 +372,7 @@ ggplot(data = FirstYearGPA, aes(x = SATV, y = GPA)) +
   geom_smooth(method = lm, se = FALSE)
 ```
 
-There appears to be some linear association between these variables, but it is not particularly strong. We can quantify this relationship the slope coefficient,
+There appears to be some linear association between these variables, but it is not particularly strong. We can quantify this relationship using the slope coefficient,
 
 ```{r}
 m1 <- lm(GPA~SATV, data = FirstYearGPA)
@@ -352,7 +381,7 @@ summary(m1)
 
 In this case the value of the slope is 0.00169, which is not large, but appears to be statistically significant. However, the validity of the hypothesis test shown in the default regression table relies on the conditions for simple linear regression being met. Let's assume that in this case the assumptions are **not** met. Could we still feel confident that the slope is non-zero? 
 
-If `GPA` and `SATV` were really related, then there is a real relationship binding the $i^{th}$ value of `GPA` to the $i^{th}$ value of `SATV`. In this case it would not make sense link the $i^{th}$ value of `GPA` to the some other value of `SATV`. But if the relationship between these two variables was in fact zero, then it wouldn't matter how we matched up the entries in the variables!
+If `GPA` and `SATV` were really related, then there is a real relationship binding the $i^{th}$ value of `GPA` to the $i^{th}$ value of `SATV`. In this case it would not make sense to link the $i^{th}$ value of `GPA` to some other value of `SATV`. But if the relationship between these two variables was in fact zero, then it wouldn't matter how we matched up the entries in the variables!
 
 The basic idea of the permutation test is to shuffle the mapping between the two variables many times (i.e. sample *without replacement*), and examine the distribution of the resulting slope coefficient. If the actual value of the slope is a rare member of that distribution, then we have evidence that the null hypothesis of $\beta_1=0$ might not be true. 
 
@@ -360,7 +389,9 @@ The basic idea of the permutation test is to shuffle the mapping between the two
 - Do you still believe that the slope is non-zero?
 
 ```{r, eval=FALSE}
-ggplot(data = FirstYearGPA, aes(x = shuffle(SATV), y = GPA)) +
+library(mosaic)
+ggplot(data = FirstYearGPA, aes(x = shuffle(SATV), 
+                                y = GPA)) +
   geom_point() +
   geom_smooth(method = lm, se = FALSE)
 ```
@@ -368,6 +399,7 @@ ggplot(data = FirstYearGPA, aes(x = shuffle(SATV), y = GPA)) +
 The procedure for the randomization test is simple. We simply shuffle the response variable and compute the resulting slope with the explanatory variable. But we do this many times, until we have a sense of the distribution of that slope coefficient. We then examine where the observed slope falls in that distribution. 
 
 ```{r}
+library(infer)
 slopetest <- FirstYearGPA %>%
   specify(response = GPA, explanatory = SATV) %>%
   hypothesize(null = "independence") %>%
@@ -376,12 +408,12 @@ slopetest <- FirstYearGPA %>%
 
 ggplot(data = slopetest, aes(x = stat)) +
   geom_density() +
-  geom_vline(xintercept = 0.0016986, color = "red")
+  geom_vline(xintercept = 0.0001, color = "red")
 ```
 
 This looks pretty weird, visually!
 
-Of course, we can also explicitly find where in the distribution the observed correlation lies. 
+Of course, we can also explicitly find where in the distribution the observed slope lies. 
 
 ```{r, eval=FALSE}
 slopetest %>%
@@ -398,7 +430,45 @@ get_ci(slopetest)
 
 - Compare this confidence interval to the one returned by `confint()` on original model. Why are they different?
 -  Perform the above procedure to test the slope value to predict `GPA` using `SATM`. 
+
+```{r}
+slopetest <- FirstYearGPA %>%
+  specify(response = GPA, explanatory = SATM) %>%
+  hypothesize(null = "independence") %>%
+  generate(reps = 5000, type = "permute") %>%
+  calculate(stat = "slope")
+
+lm(GPA~SATM, data=FirstYearGPA)
+
+ggplot(data = slopetest, aes(x = stat)) +
+  geom_density() +
+  geom_vline(xintercept = 0.001202, color = "red")
+```
+
 - Perform the above procedure to test the slope value to predict `GPA` using `HSGPA`. 
+
+```{r}
+library(car)
+data(Salaries)
+m1 <- lm(salary ~ discipline, data = Salaries)
+summary(m1)
+```
+
+```{r}
+slopetest <- Salaries %>%
+  specify(response = salary, explanatory = sex) %>%
+  hypothesize(null = "independence") %>%
+  generate(reps = 5000, type = "permute") %>%
+  calculate(stat = "slope")
+
+lm(salary~sex, data=Salaries)
+
+ggplot(data = slopetest, aes(x = stat)) +
+  geom_density() +
+  geom_vline(xintercept = 14008, color = "red")
+```
+
+
 
 #### The Bootstrap
 
@@ -417,8 +487,10 @@ ggplot(data = FirstYearGPA, aes(x = SATV, y = GPA)) +
 To create a bootstrap sample, we select rows from the data frame uniformly at random, but with replacement. 
 
 ```{r, eval=FALSE}
-ggplot(data = resample(FirstYearGPA), aes(x = SATV, y = GPA)) +
-  geom_point() +
+# this needs the mosaic package again!
+ggplot(data = mosaic::resample(FirstYearGPA), 
+       aes(x = SATV, y = GPA)) +
+  geom_point(alpha = 0.5) +
   geom_smooth(method = lm, se = FALSE)
 ```
 
@@ -446,7 +518,7 @@ slopeboot <- FirstYearGPA %>%
   calculate(stat = "slope")
 
 ggplot(data = slopeboot, aes(x = stat)) +
-  geom_density() +
+  geom_histogram() +
   geom_vline(xintercept = 0.0016986, color = "red")
 ```
 
@@ -455,14 +527,46 @@ The bootstrap distribution will always be centered around the sample statistic f
 There are several methods constructing confidence intervals from the bootstrap. My preferred method does not require that the bootstrap distribution be normal, but works best when it is roughly symmetric. In this case we simply use the percentiles of the bootstrap distribution to build confidence intervals. This method makes the most sense in the most cases. 
 
 ```{r, eval=FALSE}
-get_ci(slopeboot)
+get_ci(slopeboot, level = 0.9)
 visualize(slopeboot)
 ```
 
 
+"I am 95% confident that for a 1-point increase in SATV, the college GPA will increase between 0.000944 and 0.00242." This interval does not cross 0, so we are pretty confident that there **is** a relationship between SATV and GPA. 
+
 - Create a bootstrap sample of at least 2000 and construct a confidence intervals using the bootstrap. How does this interval differ from the typical confidence interval? 
 
 - Construct bootstrapped confidence intervals for the $GPA \sim SATV$ and $GPA \sim SATM$ models. 
+
+```{r}
+data("Cars2015", package = "Lock5Data")
+m1 <- lm(UTurn~PageNum, data=Cars2015)
+summary(m1)
+
+slopetest <- Cars2015 %>%
+  specify(response = UTurn, explanatory = PageNum) %>%
+  hypothesize(null = "independence") %>%
+  generate(reps = 5000, type = "permute") %>%
+  calculate(stat = "slope")
+
+
+ggplot(data = slopetest, aes(x = stat)) +
+  geom_density() +
+  geom_vline(xintercept = (-0.014043), color = "red")
+
+slopeboot <- Cars2015 %>%
+  specify(response = UTurn, explanatory = PageNum) %>%
+  generate(reps = 5000, type = "bootstrap") %>%
+  calculate(stat = "slope")
+
+ggplot(data = slopeboot, aes(x = stat)) +
+  geom_histogram() 
+get_ci(slopeboot, level = 0.99)
+```
+
+
+"I'm 99% confident that as we page through Consumer reports, the u-turn diameter for a car increases between 0.00145 feet and -0.0308 feet" 
+
 
 ## Further Reading
 

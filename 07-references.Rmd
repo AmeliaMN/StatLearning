@@ -1,0 +1,103 @@
+# Learn more
+
+Want to continue learning R and statistics? Great! Here are some resources.
+
+## Books
+
+(Many of these are available as bookdown books on the web!)
+
+### R/data science
+
+- @LeeEDAS
+- @PenRDS
+- @PenADS
+- @Cha2013
+- @WicGro2017
+
+More suggestions [from the tidyverse page](https://www.tidyverse.org/learn/)
+
+### Statistics/modeling
+
+- @IsmKim
+- @james2013introduction or @friedman2001elements
+- @baumer2017modern
+
+## Online learning/courses
+
+- Johns Hopkins [Coursera Course on R](https://www.coursera.org/course/rprog). Part of the [Data Science Specialization](https://www.coursera.org/specializations/jhu-data-science). Courses are free (I think?) but the certificate costs money.
+- [DataQuest](https://www.dataquest.io/) 
+- I do **not** recommend [DataCamp](https://www.buzzfeednews.com/article/daveyalba/datacamp-sexual-harassment-metoo-tech-startup)
+- DC instructors have moved a lot of their materials elsewhere. Check out [learnR4free](https://www.learnr4free.com/en/index.html) (That's the English link, there are also resources in Español
+and Türkçe.)
+
+## Videos
+
+Less interactive, but maybe you want to watch awesome talks about R. 
+
+- rstudio::conf is a yearly event, and they record and post videos of many talks [rstudio::global 2021](https://rstudio.com/resources/rstudioglobal-2021/), [rstudio::conf 2020](https://rstudio.com/resources/rstudioconf-2020/), etc
+  - one of my favorite recent talks is Jenny Bryan's [Object of type ‘closure’ is not subsettable](https://rstudio.com/resources/rstudioconf-2020/object-of-type-closure-is-not-subsettable/), about error messages and debugging in R
+  - another great one is Miles McBain's [Our colour of magic: The open sourcery of fantastic R packages ](https://rstudio.com/resources/rstudioconf-2019/our-colour-of-magic-the-open-sourcery-of-fantastic-r-packages/)
+  - oh! Hilary Parker's [Cultivating creativity in data work ](https://rstudio.com/resources/rstudioconf-2019/cultivating-creativity-in-data-work/)
+  - cut me off! I could pick talks all day
+- Another R-related conference is useR! Many of their talks are on [the R Consortium YouTube](https://www.youtube.com/channel/UC_R5smHVXRYGhZYDJsnXTwg)
+  - typically, you can't go wrong with the plenary talks
+  - try Julia Stewart Lowndes' 2019 keynote, [R for better science in less time](https://youtu.be/x8zCzmXjtdo?t=2176)
+  - Roger Peng's 2018 keynote, [Teaching R to New Users: From tapply to Tidyverse](https://www.youtube.com/watch?v=5033jBHFiHE&t=11s)
+  - shameless self-promotion? My 2020 keynote, [Speaking R](https://www.youtube.com/watch?v=ckW9sSdIVAc&t=676s)
+- More shameless self-promotion, I have tons of [videos on YouTube](https://www.youtube.com/c/AmeliaMcNamara). A lot of the material ehre was modified from my STAT 320 materials, so watching some of those videos might help iluminate the code here.  
+
+
+## Blogs, etc
+
+- [Simply Statistics](simplystatistics.org/), blog by Roger Peng, Jeff Leek, and Rafa Irizarry
+- Not so standard deviations ([soundcloud](https://soundcloud.com/nssd-podcast), or, wherever you get your podcasts) podcast by Hilary Parker and Roger Peng
+- [R Weekly](https://rweekly.org/) open-sourced aggregator of all things R
+
+
+## Twitter! 
+
+Who to follow:
+
+- me! [Amelia McNamara](https://twitter.com/AmeliaMN), University of St Thomas
+- [Hadley Wickham](https://twitter.com/hadleywickham), RStudio
+- [Jenny Bryan](https://twitter.com/jennybc), on leave from UBC, at RStudio
+- [Hilary Parker](https://twitter.com/hspter), data scientist at StitchFix
+- [Roger Peng](https://twitter.com/rdpeng), biostatistician at JHU
+- [Jeff Leek](https://twitter.com/jtleek), biostatistician at JHU
+- [David Robinson](https://twitter.com/drob), formerly of StackOverflow, now Heap
+- [Karl Broman](https://twitter.com/kwbroman), biostatistician at UW
+- [Karthik Ram](https://twitter.com/_inundata), rOpenSci
+- [Renee Teate](https://twitter.com/BecomingDataSci), BecomingDataSci
+- [Mine Cetinkaya-Rundel](https://twitter.com/minebocek), University of Edinburgh, RStudio.
+- [Julia Silge](https://twitter.com/juliasilge), tidytext, RStudio, formerly of StackOverflow
+
+Hashtags: 
+
+- [#rstats](https://twitter.com/hashtag/rstats)
+- [#tidyverse](https://twitter.com/hashtag/tidyverse)
+- [#rcatladies](https://twitter.com/hashtag/rcatladies)
+- [#tidytuesday](https://twitter.com/hashtag/tidytuesday) 
+
+
+## Communities
+
+You may want a physical or online place to go to learn more, ask questions, and get support. 
+
+### Online
+
+- [R for Data Science Online Learning Community](https://www.rfordatasci.com/) A place to hang out, ask questions, work through books with people. Primarily on Slack. 
+
+- [StackOverflow](https://stackoverflow.com/) A place to search, not to post (yet?)
+- [RStudio Community](https://community.rstudio.com/) A friendly place to ask questions, even if they have been asked before! 
+- When posting online, you probably need/want to make a "reprex." The tidyverse site has [lots of guidelines](https://www.tidyverse.org/help/)! 
+
+
+### "Physical"
+
+- There are R [meetups](www.meetup.com/) in many major cities (search "R user group" or similar). 
+- If you are a gender minority, check out [R-ladies](https://rladies.org/) meetups. There is also [an R-ladies community Slack](https://rladies-community-slack.herokuapp.com/)
+
+
+`r if (knitr::is_html_output()) '
+# References {-}
+'`

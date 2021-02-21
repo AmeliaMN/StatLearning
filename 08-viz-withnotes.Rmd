@@ -103,8 +103,8 @@ ggplot(Salaries, aes(x = yrs.since.phd, y = salary))
 ggplot(Salaries, aes(x = yrs.since.phd, y = salary)) +
   geom_point()
 
-ggplot(Salaries, aes(x = yrs.since.phd, y = salary)) +
-  geom_text(aes(label = discipline))
+# ggplot(Salaries, aes(x = yrs.since.phd, y = salary)) +
+#  geom_text(aes(label = discipline))
 
 # practice: make a scatterplot of salary vs. yrs.service
 ```
@@ -118,16 +118,18 @@ ggplot(Salaries, aes(x = salary, fill = discipline)) +
 ggplot(Salaries, aes(x = salary, fill = discipline)) +
   geom_density(alpha = 0.5)
 
-ggplot(Salaries, aes(x = salary)) +
-  geom_density() +
-  facet_wrap(~discipline)
+# ggplot(Salaries, aes(x = salary)) +
+#   geom_density() +
+#   facet_wrap(~discipline)
 
 # practice: make side-by-side boxplots of salary by rank
 ```
 
+<!-- Let's say I have an embarrassing thought -->
+
 4. **Scatterplots of 2 quantitative variables plus a categorical**
 
-If `yrs.since.phd` and `discpline` both explain some variability in `salary`, why not look at all the variables at once? 
+If `yrs.since.phd` and `discpline` both explain some variability in `salary`, why not look at all the variables at once?
 
 ```{r}
 ggplot(Salaries, aes(y = ___, x = ___, color = ___)) + 

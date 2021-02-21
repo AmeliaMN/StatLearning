@@ -1,0 +1,403 @@
+# More complex models
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(knitr)
+opts_chunk$set(eval = FALSE, message = FALSE, error = TRUE)
+```
+
+This will include logistic regression, as well as potentially more models as time allows! Packages introduced: `forcats`, `stringr`. 
+
+## Logistic regression
+
+Often, we want to model a **response** variable that is **binary**, meaning that it can take on only two possible outcomes. These outcomes could be labeled "Yes" or "No", or "True" of "False", but for all intents and purposes, they can be coded as either 0 or 1. We have seen these types of variables before (as indicator variables), but we always used them as **explanatory** variables. Creating a model for such a variable as the response requires a more sophisticated technique than ordinary least squares regression. It requires the use of a **logistic** model. 
+
+Instead of modeling $\pi$ (the response variable) like this,
+$$
+  \pi = \beta_0 + \beta_1 X
+$$
+
+suppose we modeled it like this,
+$$
+  \log \left( \frac{\pi}{1-\pi} \right) = logit(\pi) = \beta_0 + \beta_1 X
+$$
+This transformation is called the **logit** function. Note that this implies that
+$$
+  \pi = \frac{e^{\beta_0 + \beta_1 X}}{1 + e^{\beta_0 + \beta_1 X}} \in (0,1)
+$$
+
+The logit function constrains the fitted values to lie within $(0,1)$, which helps to give a natural interpretation as the probability of the response actually being 1. 
+
+Logistic regression:
+
+- uses logit function as a "link"
+- logit produces an S-curve inside [0,1]
+- fit using maximum likelihood estimation, **not** minimizing the sum of the squared residuals
+- really, no residuals! This means we don't have sums of squares
+
+Let's think about an example. I have some data about NFL field goals. This came from [a website of miscellaneous datasets](http://users.stat.ufl.edu/~winner/datasets.html). You can read about the data [here](http://users.stat.ufl.edu/~winner/data/nfl2008_fga.txt) and download it [here](http://users.stat.ufl.edu/~winner/data/nfl2008_fga.csv) (may just download if you click). 
+
+```{r, eval=TRUE}
+library(readr)
+library(dplyr)
+library(broom)
+library(ggplot2)
+football <- read_csv("data/nfl2008_fga.csv")
+```
+
+```{r}
+ggplot(football) +
+  geom_point(aes(x = distance, y = GOOD))
+```
+
+It would be bad practice to fit
+
+```{r, eval=TRUE}
+lm1 <- lm(GOOD~distance, data = football)
+ggplot(football, aes(x = distance, y = GOOD)) +
+  geom_point() + 
+  geom_smooth(method="lm", se = FALSE)
+```
+
+Instead, we should fit
+```{r, eval=TRUE}
+logm1 <- glm(GOOD ~ distance, data = football, family = binomial)
+```
+
+This model is more complicated than the other ones we've seen. 
+
+## "Spaces"
+
+In logistic regression, we think in three different "spaces"
+
+- log-odds space
+- odds space
+- probability space
+
+
+
+```{r, eval=TRUE, echo=FALSE}
+football_logm1 <- augment(logm1, data = football)
+football_logm1 <- football_logm1 %>%
+  mutate(odds = exp(.fitted), probability = odds / (1 + odds))
+```
+
+### Log-odds space
+Logistic regression is linear in log-odds space. 
+
+```{r, eval=TRUE, echo=FALSE}
+ggplot(football_logm1, aes(x = distance)) +
+  geom_line(aes(y = .fitted))
+```
+
+Why is this useful?
+
+### Odds space
+
+$$
+\frac{\pi}{1-\pi} = e^{\beta_0+\beta_1\cdot X}
+$$
+
+```{r, eval=TRUE, echo=FALSE}
+ggplot(football_logm1, aes(x = distance)) +
+  geom_line(aes(y = odds))
+```
+
+Why is this useful? 
+
+### Probability space
+
+$$
+\pi = \frac{e^{\beta_0+\beta_1\cdot X}}{1+e^{\beta_0+\beta_1\cdot X}}
+$$
+
+```{r, eval=TRUE, echo=FALSE}
+ggplot(football_logm1, aes(x = distance)) +
+  geom_point(aes(y = GOOD)) +
+  geom_line(aes(y = probability))
+```
+
+Why is this useful?
+
+## Fitting a logistic model
+
+Fitting a logistic curve is mathematically more complicated than fitting a least squares regression, but the syntax in R is similar, as is the output. The procedure for fitting is called *maximum likelihood estimation*, and the usual machinery for the sum of squares breaks down. Consequently, there is no notion of $R^2$, etc.
+
+Instead of using `lm()` to model this kind of response, we use `glm()` with the argument `family=binomial`
+
+```{r}
+logm1 <- glm(GOOD ~ distance, data = football, family = binomial)
+```
+
+1. How can we interpret the coefficients of this model in the context of the problem? 
+
+```{r}
+summary(logm1)
+exp(coef(logm1))
+```
+
+The interpretation of the coefficients in a linear regression model are clear based on an understanding of the geometry of the regression model. We use the terms *intercept* and *slope* because a simple linear regression model is a line. In a simple logistic model, the line is transformed by the logit function. How do the coefficients affect the shape of the curve in a logistic model?
+
+I have created a [shiny app](https://ameliamn.shinyapps.io/log_app/) that will allow you to experiment with changes to the intercept and slope coefficients in the simple logistic model for `isAlive` as a function of `age`.
+
+2. How do changes in the intercept term affect the shape of the logistic curve?
+3. How do changes in the slope term affect the shape of the logistic curve?
+
+### Interptetation
+
+$\beta_1$ is the typical change in the log-odds for each one-unit increase in x. 
+
+$e^{\beta_1}$ is the multiplier for odds for each one-unit increase. 
+
+These changes are constant
+
+
+## Visualizing the model
+
+Like we did with linear regression, the `broom` package can do the work of tidying up our model objects for us. 
+
+
+```{r}
+football_logm1 <- augment(logm1, data = football)
+```
+
+4. What variables are in this new dataset? 
+5. What does the `data=` argument do?
+
+```{r}
+football_logm1 <- football_logm1 %>%
+  mutate(odds = exp(.fitted), 
+         probability = odds / (1 + odds))
+```
+
+6. What does this `mutate()` code do?
+
+### Probability space
+
+```{r}
+ggplot(football_logm1, aes(x = distance)) +
+  geom_point(aes(y = GOOD)) +
+  geom_line(aes(y = probability))
+```
+
+This plot can have the data points in it, because it shows us probability space. If we move into a different space, that isn't necessarily possible.
+
+### Odds space
+
+```{r}
+ggplot(football_logm1, aes(x = distance)) +
+  geom_line(aes(y = odds))
+```
+
+### Log-odds space
+
+```{r}
+ggplot(football_logm1, aes(x = distance)) +
+  geom_line(aes(y = .fitted))
+```
+
+3. Why can't the odds and log-odds plots have the data points?
+
+
+## Binning
+
+In order to plot data points in those spaces, it can be useful to **bin** the explanatory variable and then compute the average proportion of the response within each bin. 
+
+```{r}
+football <- football %>%
+  mutate(distGroup = cut(distance, breaks = 10))
+football %>%
+  group_by(distGroup) %>%
+  skim(GOOD)
+```
+
+
+```{r}
+football_binned <- football %>%
+  group_by(distGroup) %>%
+  summarize(binnedGOOD = mean(GOOD), binnedDist = mean(distance)) %>%
+  mutate(logit = log(binnedGOOD/(1-binnedGOOD)))
+```
+
+4. What does this code do?
+5. How many observations are in our new dataset?
+
+Then, it can be illustrative to see how the logistic curve fits through this series of points. 
+
+```{r}
+ggplot(football_binned) +
+  geom_point(aes(x = binnedDist, y = binnedGOOD)) +
+  geom_line(data = football_logm1, aes(x = distance, y = probability))
+```
+
+Consider now the difference between the fitted values and the link values. Although the fitted values do not follow a linear pattern with respect to the explanatory variable, the link values do. To see this, let's plot them explicitly against the logit of the binned values. 
+
+```{r}
+ggplot(football_binned) +
+  geom_point(aes(x = binnedDist, y = logit)) +
+  geom_line(data = football_logm1, aes(x = distance, y = .fitted))
+```
+
+Note how it is considerably easier for us to assess the quality of the fit visually using the link values, as opposed to the binned probabilities. 
+
+6. Why can't we take the logit of the actual responses?
+
+## Checking conditions
+
+Of course, we have conditions that are necessary to use a logistic model for inference. These are similar to the requirements for linear regression:
+
+* Linearity of the *logit* (or $\log{(odds)}$)
+* Independence
+* Random
+
+The requirements for Constant Variance and Normality are no longer applicable. In the first case, the variability in the response now inherently depends on the value, so we know we won't have constant variance. In the second case, there is no reason to think that the residuals will be normally distributed, since the "residuals" are can only be computed in relation to 0 or 1. So in both cases the properties of a binary response variable break down the assumptions we made previously. 
+
+Let's look at the empirical logit plot again.
+
+```{r, fig.width=10}
+ggplot(football_binned) +
+  geom_point(aes(x = binnedDist, y = logit)) +
+  geom_line(data = football_logm1, aes(x = distance, y = .fitted))
+```
+
+8. Does it look like the linearity condition is upheld? 
+
+## Comparing to a null model
+
+We'd like to consider how well this model is working by looking at its predictions, and comparing them to a null model. The most boring prediction we could use is the mean, 
+
+```{r}
+avg <- mean(football$GOOD)
+avg
+```
+
+If we used the average as our prediction, we would predict that every kick was good, and we would be right 87\% of the time. So, we'd like to do even better than that with our model. 
+
+One technique for assessing the goodness-of-fit in a logistic regression model is to examine the percentage of the time that our model was "right." What does it mean to be correct in this situation? The response variable is binary, but the predictions generated by the model are quantities on $[0,1]$. A simple way to **classify** the fitted values of our model is to simply round them off. Once we do this, we can tabulate how often the rounded-off probability from the model agrees with the actual response variable. 
+
+```{r}
+football_logm1 <- football_logm1 %>%
+  mutate(predictGOOD = if_else(probability > 0.5, 1, 0))
+```
+
+```{r}
+football_logm1 %>%
+  group_by(GOOD, predictGOOD) %>%
+  summarize(n())
+```
+
+14. How many observations did we correct? How many incorrect? 
+15. Are we doing better than just using the mean?
+
+Of course, there are many more sophisticated ways to **assess** a logistic regression model. 
+
+## Multiple logistic regression
+
+Just as with linear regression, we can use arbitrarily many predictors in our logistic regression model. 
+
+Try generating a model with multiple predictor variables. 
+
+```{r}
+logm2 <- __(__~__, data = __, family = __)
+```
+
+
+
+Is it better than the simple logistic model? How can you tell? 
+
+
+
+
+## strings and factors
+
+Sometimes you have messy character strings in your data, and you want to do something with them. The package `stringr` has lots of utilities, but even more often when I reach for that package I want the `separate` function from the `tidyr` package. 
+
+```{r}
+library(tidyr)
+```
+
+Let's look at the RailsTrails dataset. This is technically `data(RailsTrails, package = "Stat2Data")`, but again, I wrote it out to a .csv to give you more practice downloading and importing data. 
+
+```{r}
+RailsTrails <- read_csv("data/RailsTrails.csv")
+```
+
+
+Maybe we want to know about the suffixes (?) of the street names. In other words, are they St, Dr, etc? Let's use separate to pull that variable apart into two.
+
+```{r}
+RailsTrails %>%
+  separate(StreetName, into = c("name", "kind"), 
+           sep = " ", remove = FALSE, extra = "merge") %>%
+  select(StreetName, name, kind)
+```
+
+this isn't quite what we wanted. Weird! Like I said, `separate` is the solution to many woes. 
+
+Today, we need to do something a little more complicated. Let's try a `stringr` function. 
+
+```{r}
+library(purrr)
+RailsTrails %>%
+  mutate(pieces = str_split(StreetName, " ")) %>%
+  select(StreetName, pieces) %>%
+  mutate(last_piece = map_chr(pieces, ~ .x[length(.x)]))
+```
+
+Eek, that one is pretty complicated! Let's try something a little simpler,
+
+```{r}
+RailsTrails %>%
+  mutate(last_piece = word(StreetName, start = -1)) %>%
+  select(StreetName, last_piece)
+```
+
+Okay, that looks like what we want.
+
+```{r}
+RailsTrails <- RailsTrails %>%
+  mutate(last_piece = word(StreetName, start = -1))
+```
+
+
+Finally, we might want to fix up the strings so they are more consistent,
+
+```{r}
+library(forcats)
+RailsTrails <- RailsTrails %>%
+  mutate(last_piece = as_factor(last_piece)) %>%
+  mutate(last_piece = fct_recode(last_piece,
+    `Drive` = "Dr",
+    `Road` = "Rd",
+    `Street` = "St",
+    `Drive` = "Dr.",
+    `Road` = "Rd.",
+    `Avenue` = "Ave"
+  ))
+ggplot(RailsTrails) +
+  geom_bar(aes(x = last_piece))
+```
+
+What if we want the barchart in order of frequency?
+
+```{r}
+RailsTrails <- RailsTrails %>%
+  mutate(last_piece = fct_infreq(last_piece))
+ggplot(RailsTrails) + 
+  geom_bar(aes(x = last_piece))
+```
+
+As a last activity, let's try making a logistic regression model to predict if a house in Northampton, MA has a garage. 
+
+We'll need to do a little *more* data cleaning before we can do that, because R wants a binary variable for the response, and `GarageGroup` is currently a character variable. 
+
+```{r}
+RailsTrails <- RailsTrails %>%
+  mutate(Garage = ___(GarageGroup=="yes", __, __))
+```
+
+Now, we can make a model. Perhaps try using that last_piece as a predictor. 
+
+```{r}
+logm3 <- __(__~__, data = __, family = __)
+```
+

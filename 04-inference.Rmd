@@ -121,9 +121,8 @@ Joins can be complicated, so you may want to look at a visual explanation:
 
 - [visualization of database JOINs](http://www.codinghorror.com/blog/2007/10/a-visual-explanation-of-sql-joins.html) 
 - [shiny app about R joins](https://beta.rstudioconnect.com/content/1867/)
-- [data wrangling cheatsheet](https://www.rstudio.com/wp-content/uploads/2015/02/data-wrangling-cheatsheet.pdf)
+- [data transformation cheatsheet](https://github.com/rstudio/cheatsheets/raw/master/data-transformation.pdf)
 
-Let's say we want to join our `doctors` data and our `policekillings` data. We need a variable to "join on." In this case, we want to match states with states. Unfortunately, `doctors` has state names written out and `policekillings` just has the state abbreviations. We need to change one to match the other. 
 
 Luckily, R comes with a dataset on state names
 
@@ -357,7 +356,9 @@ The basic idea of the permutation test is to shuffle the mapping between the two
 - Do you still believe that the slope is non-zero?
 
 ```{r, eval=FALSE}
-ggplot(data = FirstYearGPA, aes(x = shuffle(SATV), y = GPA)) +
+# for this code to work, you need the mosaic package!
+# install.packages("mosaic")
+ggplot(data = FirstYearGPA, aes(x = mosaic::shuffle(SATV), y = GPA)) +
   geom_point() +
   geom_smooth(method = lm, se = FALSE)
 ```
@@ -378,7 +379,7 @@ ggplot(data = slopetest, aes(x = stat)) +
 
 This looks pretty weird, visually!
 
-Of course, we can also explicitly find where in the distribution the observed correlation lies. 
+Of course, we can also explicitly find where in the distribution the observed slope lies. 
 
 ```{r, eval=FALSE}
 slopetest %>%
@@ -387,7 +388,7 @@ slopetest %>%
 
 `direction` tells R whether to compute the amount of data to the right or the left of the test statistic, or in both directions. In this case, our alternative hypothesis is $\beta_1 \neq 0$, so we want both sides of the distribution. 
 
-Finally, we can find a non-parametric 95% confidence interval for the correlation coefficient. The interpretation here is if our actual slope value fell in this interval, we would **not**  consider it statistically significant.  
+Finally, we can find a non-parametric 95% confidence interval for the slope coefficient. The interpretation here is if our actual slope value fell in this interval, we would **not**  consider it statistically significant.  
 
 ```{r, eval=FALSE}
 get_ci(slopetest)
